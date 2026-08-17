@@ -1,10 +1,10 @@
-# 🍳 Complete Guide: Porting ROMs with DnA Android Kitchen for Xiaomi Blossom
+# Complete Guide: Porting ROMs with DnA Android Kitchen for Xiaomi Blossom
 
 This comprehensive guide teaches you step-by-step how to use **DnA Android Kitchen** (and similar ROM porting kitchens like CRB, SuperR's Kitchen, or Android Kitchen) to port any ROM (**MIUI, HyperOS, AOSP, PixelOS, OneUI, OxygenOS**) to **Xiaomi Blossom** (Redmi 9A, 9C, 9 Activ, Poco C3).
 
 ---
 
-## 📚 Core Porting Concepts: Base vs. Port ROM
+## Core Porting Concepts: Base vs. Port ROM
 
 | Term | Description | For Xiaomi Blossom |
 |---|---|---|
@@ -13,7 +13,7 @@ This comprehensive guide teaches you step-by-step how to use **DnA Android Kitch
 
 ---
 
-## 🛠️ Prerequisites & Tools Needed
+##  Prerequisites & Tools Needed
 
 1. **DnA Android Kitchen** (or CRB / SuperR Kitchen / Carliv Image Kitchen).
 2. **Base ROM**: Stock Fastboot ROM for Xiaomi Blossom (`dandelion` or `angelica` or `cattail` - MIUI 12.5 Fastboot `.tgz`).
@@ -24,36 +24,36 @@ This comprehensive guide teaches you step-by-step how to use **DnA Android Kitch
 
 ---
 
-## 🚀 Step-by-Step Porting Workflow in DnA Kitchen
+## Step-by-Step Porting Workflow in DnA Kitchen
 
 ```mermaid
 graph TD
-    A[Unpack Base ROM Blossom] --> C[Extract Partitions: boot, vendor, system, product]
-    B[Unpack Port ROM Target] --> D[Extract Partitions: system, system_ext, product]
-    C --> E[Keep Base: boot.img, vendor, dtbo]
-    D --> F[Take Port: system, system_ext, product]
-    E --> G[Merge & Patch Stage in DnA Kitchen]
-    F --> G
-    H[Blossom Porting Kit Overlays & Shims] --> G
-    G --> I[Fix build.prop & props]
-    I --> J[Repack Images / Super.img / Flashable Zip]
-    J --> K[Flash via FastbootD or TWRP]
+ A[Unpack Base ROM Blossom] --> C[Extract Partitions: boot, vendor, system, product]
+ B[Unpack Port ROM Target] --> D[Extract Partitions: system, system_ext, product]
+ C --> E[Keep Base: boot.img, vendor, dtbo]
+ D --> F[Take Port: system, system_ext, product]
+ E --> G[Merge & Patch Stage in DnA Kitchen]
+ F --> G
+ H[Blossom Porting Kit Overlays & Shims] --> G
+ G --> I[Fix build.prop & props]
+ I --> J[Repack Images / Super.img / Flashable Zip]
+ J --> K[Flash via FastbootD or TWRP]
 ```
 
 ---
 
-## 📋 Step 1: Unpack Base and Port ROMs
+## Step 1: Unpack Base and Port ROMs
 
 1. Open **DnA Android Kitchen**.
 2. **Set Base ROM**:
-   - Extract `super.img` or the raw partition images (`system.img`, `vendor.img`, `product.img`, `boot.img`) of the **Blossom Base ROM**.
-   - Load it into DnA Kitchen as the **Base / Working Project**.
+ - Extract `super.img` or the raw partition images (`system.img`, `vendor.img`, `product.img`, `boot.img`) of the **Blossom Base ROM**.
+ - Load it into DnA Kitchen as the **Base / Working Project**.
 3. **Set Port ROM**:
-   - Extract `super.img` or partition images of your **Port ROM** in DnA Kitchen under the **Port Project**.
+ - Extract `super.img` or partition images of your **Port ROM** in DnA Kitchen under the **Port Project**.
 
 ---
 
-## 📂 Step 2: Structure Partition Replacement
+## Step 2: Structure Partition Replacement
 
 When merging the ROMs in DnA Kitchen:
 
@@ -68,7 +68,7 @@ When merging the ROMs in DnA Kitchen:
 
 ---
 
-## 🔧 Step 3: Inject Blossom Overlays, Libs & Shims (Crucial Step)
+## Step 3: Inject Blossom Overlays, Libs & Shims (Crucial Step)
 
 From this repository, copy the necessary files into the **Port ROM** project inside DnA Kitchen:
 
@@ -96,7 +96,7 @@ Ensure the Port ROM has Blossom's audio routing:
 
 ---
 
-## ⚙️ Step 4: Fix `build.prop` and Properties
+##  Step 4: Fix `build.prop` and Properties
 
 Open `system/build.prop`, `vendor/build.prop`, and `product/build.prop` in the Port Project and configure:
 
@@ -127,18 +127,18 @@ ro.vendor.perf_touch_boost=1
 
 ---
 
-## 📦 Step 5: Repack in DnA Kitchen
+## Step 5: Repack in DnA Kitchen
 
 1. In **DnA Kitchen**, run **Build / Repack Partitions**:
-   - Select filesystem: `ext4` or `erofs` (match Base ROM format).
-   - Set partition size: Dynamic / Auto-calculate.
+ - Select filesystem: `ext4` or `erofs` (match Base ROM format).
+ - Set partition size: Dynamic / Auto-calculate.
 2. Build `super.img` or create a **Flashable Recovery ZIP**:
-   - DnA Kitchen will generate `super.img` containing `system`, `vendor`, `product`, `system_ext`.
-   - Or generate a TWRP/OrangeFox flashable ZIP with dynamic partition metadata.
+ - DnA Kitchen will generate `super.img` containing `system`, `vendor`, `product`, `system_ext`.
+ - Or generate a TWRP/OrangeFox flashable ZIP with dynamic partition metadata.
 
 ---
 
-## 📲 Step 6: Flashing Your Ported ROM
+## Step 6: Flashing Your Ported ROM
 
 ### Method 1: Flashing via FastbootD
 ```bash
@@ -162,23 +162,23 @@ fastboot reboot
 
 ---
 
-## 🐛 Step 7: Debugging Bootloops (ADB Logcat)
+## Step 7: Debugging Bootloops (ADB Logcat)
 
 If your port gets stuck on the boot animation (bootloop):
 
 1. Connect phone to PC with USB cable.
 2. Run adb logcat to see why it is crashing:
-   ```bash
-   adb wait-for-device && adb logcat -b all -v time > port_bootlog.txt
-   ```
+ ```bash
+ adb wait-for-device && adb logcat -b all -v time > port_bootlog.txt
+ ```
 3. Search `port_bootlog.txt` for `AndroidRuntime` fatal exceptions:
-   - **`Fatal signal 11 (SIGSEGV)` in SurfaceFlinger**: Missing `GraphicBufferMapper` shim or display cutout error -> Check `DisplayOverlayBlossom.apk` and `libshim_ui.so`.
-   - **`SELinux: Denied`**: SELinux blocking HAL -> Set SELinux to permissive in `boot.img` cmdline (`androidboot.selinux=permissive`) during port testing.
-   - **`ServiceManager: Cannot find android.hardware.audio`**: Mismatched audio service in `vendor/etc/init/` -> Restore Base `audio.rc` and HAL files.
+ - **`Fatal signal 11 (SIGSEGV)` in SurfaceFlinger**: Missing `GraphicBufferMapper` shim or display cutout error -> Check `DisplayOverlayBlossom.apk` and `libshim_ui.so`.
+ - **`SELinux: Denied`**: SELinux blocking HAL -> Set SELinux to permissive in `boot.img` cmdline (`androidboot.selinux=permissive`) during port testing.
+ - **`ServiceManager: Cannot find android.hardware.audio`**: Mismatched audio service in `vendor/etc/init/` -> Restore Base `audio.rc` and HAL files.
 
 ---
 
-## 📄 License & Credits
+## License & Credits
 - Xiaomi Blossom Device Tree maintained by [crDroid Android](https://github.com/crdroidandroid) & [LineageOS](https://github.com/LineageOS).
 - DnA Android Kitchen by the DnA Developer Team.
 - Apache 2.0 License.

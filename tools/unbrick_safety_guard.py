@@ -26,7 +26,6 @@ logger = logging.getLogger("SafetyGuard")
 class BlossomSafetyGuard:
     """Anti-Brick & Safety Verification Engine for Xiaomi Blossom."""
 
-    # DANGEROUS PARTITIONS: Must NEVER be overwritten in custom ROMs (Protects from hardbricks & IMEI loss)
     CRITICAL_PROTECTED_PARTITIONS: Set[str] = {
         "preloader", "preloader_a", "preloader_b",
         "lk", "lk2", "bootloader", "bootloader2",
@@ -36,7 +35,6 @@ class BlossomSafetyGuard:
         "seccfg", "para", "misc", "expdb", "boot_para"
     }
 
-    # ALLOWED FLASH TARGETS (Safe for custom ROMs & ports)
     SAFE_FLASH_TARGETS: Set[str] = {
         "boot", "dtbo", "vbmeta", "vbmeta_system", "vbmeta_vendor",
         "super", "system", "vendor", "product", "system_ext", "odm",
@@ -53,18 +51,15 @@ class BlossomSafetyGuard:
             return False
 
         violations: List[str] = []
-        safe_files: List[str] = []
 
         with zipfile.ZipFile(zip_path, "r") as zf:
             for file_name in zf.namelist():
                 base = Path(file_name).stem.lower()
                 ext = Path(file_name).suffix.lower()
 
-                # Check if dangerous partition image is included
                 if ext == ".img" and base in self.CRITICAL_PROTECTED_PARTITIONS:
                     violations.append(f"CRITICAL RISK: Contains protected partition '{file_name}'. Flashing this could hard-brick the device!")
 
-                # Check flashing scripts inside
                 if file_name.endswith((".sh", ".bat")):
                     content = zf.read(file_name).decode("utf-8", errors="ignore")
                     for dangerous in self.CRITICAL_PROTECTED_PARTITIONS:
@@ -72,21 +67,21 @@ class BlossomSafetyGuard:
                             violations.append(f"CRITICAL RISK: Flasher script '{file_name}' attempts to flash '{dangerous}'!")
 
         print("\n" + "=" * 60)
-        print(" 🛡️ XIAOMI BLOSSOM ANTI-BRICK SAFETY AUDIT REPORT")
+        print(" XIAOMI BLOSSOM ANTI-BRICK SAFETY AUDIT REPORT")
         print("=" * 60)
 
         if violations:
-            print("\n❌ SAFETY VIOLATIONS DETECTED:")
+            print("\nSAFETY VIOLATIONS DETECTED:")
             for v in violations:
                 print(f"  • {v}")
-            print("\nResult: ❌ BLOCKED BY SAFETY GUARD (Risk of brick detected)")
+            print("\nResult: BLOCKED BY SAFETY GUARD (Risk of brick detected)")
             return False
         else:
-            print("\n✅ ZERO BRICK RISK DETECTED:")
+            print("\nZERO BRICK RISK DETECTED:")
             print("  • All protected partitions (preloader, lk, nvram, tee) are 100% safe.")
             print("  • Only safe dynamic partitions and kernel/dtbo/vbmeta are targeted.")
             print("  • IMEI, Baseband, and MAC calibration data are fully preserved.")
-            print("\nResult: ✅ 100% SAFE TO FLASH ON XIAOMI BLOSSOM")
+            print("\nResult: 100% SAFE TO FLASH ON XIAOMI BLOSSOM")
             return True
 
     def audit_flashing_script(self, script_path: Path) -> bool:

@@ -36,22 +36,18 @@ def build_magisk_zip(module_dir: Path, output_zip: Path) -> bool:
     logger.info(f"Creating Magisk flashable ZIP: {output_zip}...")
 
     with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zf:
-        for root_path, _, file_names in sorted(module_dir.walk() if hasattr(module_dir, 'walk') else []):
-            pass
-        # Fallback for Python < 3.12 compatibility
         for file_path in sorted(module_dir.rglob("*")):
             if file_path.is_file():
                 arcname = file_path.relative_to(module_dir)
                 zf.write(file_path, arcname)
                 logger.debug(f"  Added: {arcname}")
 
-    # Calculate SHA256
     hasher = hashlib.sha256()
     with open(output_zip, "rb") as f:
         while chunk := f.read(65536):
             hasher.update(chunk)
 
-    logger.info(f"✅ Successfully built: {output_zip.name}")
+    logger.info(f"Successfully built: {output_zip.name}")
     logger.info(f"  -> Size: {output_zip.stat().st_size} bytes")
     logger.info(f"  -> SHA256: {hasher.hexdigest()}")
     return True

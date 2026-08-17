@@ -6,7 +6,7 @@ Whether you are porting **MIUI / HyperOS**, building **AOSP / Custom ROMs from s
 
 ---
 
-## 🗺️ Master File & Destination Mapping Table
+##  Master File & Destination Mapping Table
 
 | Source in this Repository | Destination in MIUI / HyperOS Port | Destination in AOSP / Custom ROM Tree | Destination in Treble GSI |
 |---|---|---|---|
@@ -32,26 +32,26 @@ Whether you are porting **MIUI / HyperOS**, building **AOSP / Custom ROMs from s
 
 ---
 
-## 📱 1. Porting MIUI / HyperOS ROMs
+## 1. Porting MIUI / HyperOS ROMs
 
 When porting a MIUI or HyperOS ROM from another MediaTek device (e.g. Helio G80/G85/G88 or higher) to Xiaomi Blossom:
 
 ### Step 1: Fix Display Cutout & Status Bar Overlap
 1. Push `apks/DisplayOverlayBlossom.apk` to `/system_ext/overlay/` or `/product/overlay/` with permissions `chmod 644`.
 2. Ensure the following properties exist in `/system/build.prop` or `/system_ext/build.prop`:
-   ```properties
-   ro.miui.notch=1
-   ro.miui.has_real_notch=1
-   ro.vendor.display.type=1
-   ```
+ ```properties
+ ro.miui.notch=1
+ ro.miui.has_real_notch=1
+ ro.vendor.display.type=1
+ ```
 3. If building the port manually, inject the SVG cutout from [`extracted_display_overlay_xml/display_cutout_notch.xml`](extracted_display_overlay_xml/display_cutout_notch.xml):
-   ```xml
-   <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
-   <dimen name="status_bar_height_portrait">56.0px</dimen>
-   <dimen name="status_bar_height_default">56.0px</dimen>
-   <dimen name="status_bar_height_landscape">24.0dp</dimen>
-   <dimen name="rounded_corner_radius">33dp</dimen>
-   ```
+ ```xml
+ <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
+ <dimen name="status_bar_height_portrait">56.0px</dimen>
+ <dimen name="status_bar_height_default">56.0px</dimen>
+ <dimen name="status_bar_height_landscape">24.0dp</dimen>
+ <dimen name="rounded_corner_radius">33dp</dimen>
+ ```
 
 ### Step 2: Fix VoLTE & MIUI Carrier Configs
 - Copy `xmls/carrier/vendor_miui.xml` and `xmls/carrier/vendor_device.xml` to `/vendor/etc/carrier/` or install `apks/CarrierConfigOverlayBlossom.apk` into `/vendor/overlay/`.
@@ -62,22 +62,22 @@ If the Camera or SurfaceFlinger crashes due to missing `GraphicBufferMapper` sym
 
 ---
 
-## 🛠️ 2. Building AOSP / Custom ROMs from Source (LineageOS, crDroid, etc.)
+##  2. Building AOSP / Custom ROMs from Source (LineageOS, crDroid, etc.)
 
 ### Step 1: Device Tree Placement
 Place the components into your device tree `device/xiaomi/blossom/`:
 ```text
 device/xiaomi/blossom/
-├── rro_overlays/             <- Copy from this repo's rro_overlays/
-├── configs/                  <- Copy audio/, media/, thermal/, power/ from xmls/
-├── rootdir/                  <- Copy from rootdir/
-├── sepolicy/                 <- Copy from sepolicy/
-├── libshims/                 <- Copy from port_libs_and_shims/libshims/
-├── lights/                   <- Copy from port_libs_and_shims/lights/
-├── init/                     <- Copy from port_libs_and_shims/init/
-├── vndk/                     <- Copy from port_libs_and_shims/vndk/
-├── BoardConfig.mk            <- Copy from build_makefiles/BoardConfig.mk
-└── device.mk                 <- Copy from build_makefiles/device.mk
+├── rro_overlays/ <- Copy from this repo's rro_overlays/
+├── configs/ <- Copy audio/, media/, thermal/, power/ from xmls/
+├── rootdir/ <- Copy from rootdir/
+├── sepolicy/ <- Copy from sepolicy/
+├── libshims/ <- Copy from port_libs_and_shims/libshims/
+├── lights/ <- Copy from port_libs_and_shims/lights/
+├── init/ <- Copy from port_libs_and_shims/init/
+├── vndk/ <- Copy from port_libs_and_shims/vndk/
+├── BoardConfig.mk <- Copy from build_makefiles/BoardConfig.mk
+└── device.mk <- Copy from build_makefiles/device.mk
 ```
 
 ### Step 2: Configure `device.mk`
@@ -85,14 +85,14 @@ Ensure your `device.mk` includes the RRO overlay packages:
 ```makefile
 # RRO Overlays for Blossom
 PRODUCT_PACKAGES += \
-    CarrierConfigOverlayBlossom \
-    DialerOverlayBlossom \
-    FrameworksResOverlayBlossom \
-    LauncherOverlayBlossom \
-    SettingsOverlayBlossom \
-    SystemUIOverlayBlossom \
-    TelephonyOverlayBlossom \
-    WifiResOverlayBlossom
+ CarrierConfigOverlayBlossom \
+ DialerOverlayBlossom \
+ FrameworksResOverlayBlossom \
+ LauncherOverlayBlossom \
+ SettingsOverlayBlossom \
+ SystemUIOverlayBlossom \
+ TelephonyOverlayBlossom \
+ WifiResOverlayBlossom
 
 # Or traditional overlay path
 DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/device_tree_overlay
@@ -107,32 +107,32 @@ DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/device_tree_overlay
 
 ---
 
-## ⚡ 3. Treble GSI Porting & Notch Fix Guide
+## 3. Treble GSI Porting & Notch Fix Guide
 
 If you are running a Generic System Image (GSI) such as Phh-AOSP, PixelExperience GSI, crDroid GSI, or LineageOS GSI:
 
 ### Method A: Direct System Injection (Root / TWRP / Recovery)
 1. Mount `/system` and `/product` as read-write.
 2. Copy `apks/treble_gsi/treble-overlay-xiaomi-blossom.apk` or `apks/DisplayOverlayBlossom.apk` to `/system/product/overlay/`:
-   ```bash
-   adb root
-   adb remount
-   adb push apks/treble_gsi/treble-overlay-xiaomi-blossom.apk /system/product/overlay/
-   adb shell chmod 644 /system/product/overlay/treble-overlay-xiaomi-blossom.apk
-   adb reboot
-   ```
+ ```bash
+ adb root
+ adb remount
+ adb push apks/treble_gsi/treble-overlay-xiaomi-blossom.apk /system/product/overlay/
+ adb shell chmod 644 /system/product/overlay/treble-overlay-xiaomi-blossom.apk
+ adb reboot
+ ```
 
 ### Method B: Flash via Magisk / KernelSU / APatch
 1. Zip the folder [`magisk_overlay_module/`](magisk_overlay_module/):
-   ```bash
-   cd magisk_overlay_module
-   zip -r ../Blossom_Notch_Fix_Magisk.zip ./*
-   ```
+ ```bash
+ cd magisk_overlay_module
+ zip -r ../Blossom_Notch_Fix_Magisk.zip ./*
+ ```
 2. Flash `Blossom_Notch_Fix_Magisk.zip` in the Magisk / KernelSU Manager app and reboot.
 
 ---
 
-## 🔧 Troubleshooting Common Blossom Porting Bugs
+## Troubleshooting Common Blossom Porting Bugs
 
 | Symptom | Root Cause | Solution |
 |---|---|---|
@@ -144,6 +144,6 @@ If you are running a Generic System Image (GSI) such as Phh-AOSP, PixelExperienc
 
 ---
 
-## 📄 License & Credits
+## License & Credits
 - Xiaomi Blossom Device Tree maintained by [crDroid Android](https://github.com/crdroidandroid) & [LineageOS](https://github.com/LineageOS).
 - Apache 2.0 License.

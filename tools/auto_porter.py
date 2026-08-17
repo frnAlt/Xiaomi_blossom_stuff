@@ -20,10 +20,11 @@ import zipfile
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# Ensure tools directory is in sys.path
 sys.path.insert(0, str(Path(__file__).parent))
 from port_helper import BlossomPortEngine
 from super_tools import SuperImageBuilder, BlossomPartitionSpecs
+from auto_patcher import BlossomAutoPatcher
+from unbrick_safety_guard import BlossomSafetyGuard
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,6 +60,8 @@ class AutoPorter:
 
         self.engine = BlossomPortEngine(root_dir=self.repo_root)
         self.super_builder = SuperImageBuilder()
+        self.patcher = BlossomAutoPatcher(root_dir=self.build_dir)
+        self.safety_guard = BlossomSafetyGuard()
 
     def download_file(self, url: str, dest_dir: Path, filename_hint: str = "rom_package") -> Path:
         """Downloads a ROM archive using aria2c or curl with resilient fallback."""
@@ -130,7 +133,7 @@ class AutoPorter:
         and packages flashable Fastboot & Recovery archives.
         """
         logger.info("==================================================")
-        logger.info(" 🚀 ASSEMBLE PORTED FIRMWARE FOR XIAOMI BLOSSOM")
+        logger.info(" ASSEMBLE PORTED FIRMWARE FOR XIAOMI BLOSSOM")
         logger.info("==================================================")
 
         # 1. Prepare build root structure
@@ -190,7 +193,6 @@ class AutoPorter:
                     logger.info(f"  • Ingested Port partition '{part}'")
                     break
 
-        # Also search for standalone partition images if extracted
         part_images: Dict[str, Path] = {}
         for p_name in ["system", "vendor", "product", "system_ext", "odm"]:
             for img in self.port_dir.rglob(f"{p_name}.img"):
@@ -201,20 +203,24 @@ class AutoPorter:
         logger.info(">> Running Blossom Port Engine injection...")
         self.engine.run_port_pipeline(self.build_dir, variant=self.variant)
 
-        # 5. Build super.img if lpmake and images are available
+        # 5. Run AutoPatcher (fstab encryption bypass & audio/camera fixes)
+        logger.info(">> Running Blossom AutoPatcher routines...")
+        self.patcher.run_all_patches(self.build_dir)
+
+        # 6. Build super.img if lpmake and images are available
         if part_images and shutil.which("lpmake"):
             logger.info(">> Building dynamic partition super.img...")
             self.super_builder.build_super_image(part_images, self.build_dir / "super.img", sparse=True)
 
-        # 6. Generate Fastboot Flashing Automation Scripts (.sh & .bat)
+        # 7. Generate Fastboot Flashing Automation Scripts (.sh & .bat)
         self.super_builder.generate_flashing_scripts(self.build_dir, rom_title=f"{self.rom_type} Port for Xiaomi Blossom")
 
-        # 7. Embed Prebuilt Magisk Notch Fix Module
+        # 8. Embed Prebuilt Magisk Notch Fix Module
         magisk_zip = self.repo_root / "Blossom_Notch_Fix_Magisk.zip"
         if magisk_zip.exists():
             shutil.copy2(magisk_zip, self.build_dir / "Blossom_Notch_Fix_Magisk.zip")
 
-        # 8. Package final flashable archive
+        # 9. Package final flashable archive
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         package_name = f"Blossom_Port_{self.rom_type}_{self.variant}_{timestamp}.zip"
         output_zip = self.out_dir / package_name
@@ -225,6 +231,12 @@ class AutoPorter:
                 if file_path.is_file():
                     arcname = file_path.relative_to(self.build_dir)
                     zf.write(file_path, arcname)
+
+        # 10. Anti-Brick Safety Guard Verification
+        logger.info(">> Running Pre-Release Anti-Brick Safety Audit...")
+        is_safe = self.safety_guard.verify_rom_package_safety(output_zip)
+        if not is_safe:
+            raise RuntimeError("CRITICAL: ROM package failed Anti-Brick Safety Audit!")
 
         # Compute Checksums & Metadata
         sha256 = hashlib.sha256(output_zip.read_bytes()).hexdigest()
@@ -247,7 +259,7 @@ class AutoPorter:
         meta_file.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
         logger.info("==================================================")
-        logger.info(" ✅ PORTING COMPLETED SUCCESSFULLY!")
+        logger.info(" PORTING COMPLETED SUCCESSFULLY")
         logger.info(f"  • Output ROM: {output_zip.name}")
         logger.info(f"  • Size: {output_zip.stat().st_size / (1024 * 1024):.2f} MB")
         logger.info(f"  • SHA256: {sha256}")
@@ -283,7 +295,6 @@ def main() -> None:
         rom_type=args.rom_type
     )
 
-    # 1. Get Base ROM
     if args.base_url:
         base_archive = porter.download_file(args.base_url, porter.work_dir / "base_downloads", "base_rom")
     elif args.base_file:
@@ -296,7 +307,6 @@ def main() -> None:
         porter.extract_archive(base_archive, porter.base_dir)
         porter.extract_payload_if_present(porter.base_dir, porter.base_dir)
 
-    # 2. Get Port ROM
     if args.port_url:
         port_archive = porter.download_file(args.port_url, porter.work_dir / "port_downloads", "port_rom")
     elif args.port_file:
@@ -309,10 +319,8 @@ def main() -> None:
         porter.extract_archive(port_archive, porter.port_dir)
         porter.extract_payload_if_present(porter.port_dir, porter.port_dir)
 
-    # 3. Assemble and build
     out_rom = porter.assemble_ported_firmware()
 
-    # 4. Optional custom upload
     if args.upload_url:
         porter.upload_custom_url(out_rom, args.upload_url)
 

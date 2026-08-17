@@ -123,32 +123,32 @@ class BlossomAIAssistant:
     def generate_report(self, log_path: Path, output_md: Optional[Path] = None) -> str:
         """Generates a complete markdown diagnosis report from a log file."""
         if not log_path.exists():
-            return f"❌ Log file not found: {log_path}"
+            return f"Log file not found: {log_path}"
 
         log_content = log_path.read_text(encoding="utf-8", errors="ignore")
         detected = self.analyze_log_content(log_content)
         ai_response = self.call_online_ai(log_content)
 
         lines: List[str] = [
-            "# 🤖 Xiaomi Blossom AI Porting Assistant Report",
-            f"- **Target Device:** Xiaomi Blossom (`dandelion` / `angelica` / `cattail`)",
-            f"- **Log File:** `{log_path.name}` ({log_path.stat().st_size} bytes)",
-            f"- **Diagnostic Status:** {'⚠️ Issues Detected' if detected else '✅ No Fatal Errors Found'}\n",
+            "# Xiaomi Blossom AI Porting Assistant Report",
+            f"- Target Device: Xiaomi Blossom (dandelion / angelica / cattail)",
+            f"- Log File: `{log_path.name}` ({log_path.stat().st_size} bytes)",
+            f"- Diagnostic Status: {'Issues Detected' if detected else 'No Fatal Errors Found'}\n",
             "---"
         ]
 
         if detected:
-            lines.append("## 🔍 Detected Issues & Automated Solutions\n")
+            lines.append("## Detected Issues & Automated Solutions\n")
             for idx, item in enumerate(detected, 1):
                 lines.append(f"### {idx}. {item['issue']}")
-                lines.append(f"- **Root Cause:** {item['root_cause']}")
-                lines.append(f"- **Recommended Fix:** {item['solution']}\n")
+                lines.append(f"- Root Cause: {item['root_cause']}")
+                lines.append(f"- Recommended Fix: {item['solution']}\n")
         else:
-            lines.append("## ✅ Diagnostic Health Check")
+            lines.append("## Diagnostic Health Check")
             lines.append("No critical MediaTek HAL crashes, AVB signature mismatches, or partition overflow errors were detected in the analyzed log.\n")
 
         if ai_response:
-            lines.append("## 🧠 Deep AI Reasoning Analysis\n")
+            lines.append("## Generative AI Reasoning Analysis\n")
             lines.append(ai_response)
             lines.append("\n")
 

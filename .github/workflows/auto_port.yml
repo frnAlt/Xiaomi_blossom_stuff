@@ -1,19 +1,19 @@
-name: 🚀 Automatic ROM Porter for Xiaomi Blossom
+name: Automatic ROM Porter for Xiaomi Blossom
 
 on:
   workflow_dispatch:
     inputs:
       port_rom_url:
-        description: "🔗 Port ROM Direct Download URL (Target ROM to port to Blossom)"
+        description: "Port ROM Direct Download URL (Target ROM to port to Blossom)"
         required: true
         type: string
       base_rom_url:
-        description: "🔗 Base ROM Direct Download URL (Stock Blossom Fastboot / ZIP - Optional)"
+        description: "Base ROM Direct Download URL (Stock Blossom Fastboot / ZIP - Optional)"
         required: false
         type: string
         default: ""
       target_variant:
-        description: "📱 Target Device Variant"
+        description: "Target Device Variant"
         required: true
         type: choice
         options:
@@ -24,45 +24,45 @@ on:
           - cattail
         default: blossom
       rom_type:
-        description: "🏷️ ROM Name / Type (e.g. HyperOS, MIUI14, PixelOS, LineageOS, OneUI)"
+        description: "ROM Name / Type (e.g. HyperOS, MIUI14, PixelOS, LineageOS, OneUI)"
         required: true
         type: string
         default: "HyperOS"
       upload_release:
-        description: "📦 Upload to GitHub Releases?"
+        description: "Upload to GitHub Releases?"
         required: true
         type: boolean
         default: true
       custom_upload_url:
-        description: "🌐 Custom Upload URL (Optional: e.g. https://transfer.sh/ or your server)"
+        description: "Custom Upload URL (Optional: e.g. https://transfer.sh/ or custom HTTP server)"
         required: false
         type: string
         default: ""
 
 jobs:
   build-and-port:
-    name: 🛠️ Port ROM for Blossom (${{ inputs.target_variant }})
+    name: Port ROM for Blossom (${{ inputs.target_variant }})
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: 📥 Check out Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧹 Maximize Runner Disk Space (Free up 35GB+)
+      - name: Maximize runner disk space
         run: |
-          echo "Freeing disk space on runner..."
+          echo "Cleaning unnecessary packages to maximize free disk space..."
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
           sudo docker image prune --all --force 2>/dev/null || true
           df -h
 
-      - name: ⚙️ Set up Python 3.11
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: 📦 Install Build Dependencies & Partition Tools
+      - name: Install build dependencies and partition tools
         run: |
           sudo apt-get update
           sudo apt-get install -y aria2 p7zip-full zstd brotli liblz4-tool \
@@ -73,22 +73,22 @@ jobs:
           wget -qO- "$PAYLOAD_URL" | sudo tar -xz -C /usr/local/bin payload-dumper-go
           sudo chmod +x /usr/local/bin/payload-dumper-go
 
-          # Install lpmake & lpunpack prebuilts for dynamic partitions
+          # Install lpmake and lpunpack prebuilts for dynamic partitions
           wget -qO /tmp/lpmake.zip "https://github.com/carlitoxxpro/lpmake/releases/download/v1.0/lpmake-x86_64.zip" || true
           if [ -f /tmp/lpmake.zip ]; then
             sudo unzip -o /tmp/lpmake.zip -d /usr/local/bin/ || true
             sudo chmod +x /usr/local/bin/lpmake /usr/local/bin/lpunpack 2>/dev/null || true
           fi
 
-          echo "Tools setup complete."
+          echo "Tools setup completed."
 
-      - name: 🔨 Build Overlays, Magisk Module & Verify Tree
+      - name: Build overlays, Magisk module, and verify tree
         run: |
           python3 tools/build_overlays.py
           python3 tools/create_magisk_module.py
           python3 tools/verify_tree.py
 
-      - name: 🚀 Run Automated Blossom Port Pipeline
+      - name: Run automated Blossom port pipeline
         id: run_port
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -121,7 +121,7 @@ jobs:
           echo "META_PATH=$META_JSON" >> $GITHUB_ENV
           echo "ROM_NAME=$(basename $ROM_ZIP)" >> $GITHUB_ENV
 
-      - name: 🌐 Upload to Multi-Mirrors (Pixeldrain, Transfer.sh, Custom)
+      - name: Upload to mirrors (Pixeldrain, Transfer.sh, Custom)
         if: success()
         run: |
           CUSTOM_ARG=""
@@ -134,7 +134,7 @@ jobs:
             $CUSTOM_ARG \
             --output-md /tmp/blossom_auto_port/logs/mirrors_summary.md || true
 
-      - name: 🤖 Run AI Porting Assistant & Diagnostic Analysis
+      - name: Run AI porting assistant and diagnostic analysis
         if: always()
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -155,7 +155,7 @@ jobs:
             cat /tmp/blossom_auto_port/logs/mirrors_summary.md >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: 📤 Upload Build Logs & Diagnostics (Always Executed)
+      - name: Upload build logs and diagnostics (always executed)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -163,7 +163,7 @@ jobs:
           path: /tmp/blossom_auto_port/logs/
           retention-days: 14
 
-      - name: 📤 Upload Ported ROM Artifact
+      - name: Upload ported ROM artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -171,41 +171,41 @@ jobs:
           path: /tmp/blossom_auto_port/output/
           retention-days: 7
 
-      - name: 🚀 Create GitHub Release & Upload ROM
+      - name: Create GitHub release and upload ROM
         if: success() && inputs.upload_release == true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "port-${{ inputs.rom_type }}-${{ inputs.target_variant }}-${{ github.run_number }}"
-          name: "🔥 ${{ inputs.rom_type }} Port for Xiaomi Blossom (${{ inputs.target_variant }})"
+          name: "${{ inputs.rom_type }} Port for Xiaomi Blossom (${{ inputs.target_variant }})"
           body: |
-            ## 📱 Xiaomi Blossom Ported ROM Release
+            ## Xiaomi Blossom Ported ROM Release
 
-            - **ROM Name / Type:** `${{ inputs.rom_type }}`
-            - **Target Variant:** `${{ inputs.target_variant }}` (Redmi 9A / 9C / 9 Activ / Poco C3)
-            - **Port Source URL:** `${{ inputs.port_rom_url }}`
-            - **Build Number:** `#${{ github.run_number }}`
-            - **Commit:** `${{ github.sha }}`
+            - ROM Name / Type: `${{ inputs.rom_type }}`
+            - Target Variant: `${{ inputs.target_variant }}` (Redmi 9A / 9C / 9 Activ / Poco C3)
+            - Port Source URL: `${{ inputs.port_rom_url }}`
+            - Build Number: `#${{ github.run_number }}`
+            - Commit: `${{ github.sha }}`
 
-            ### 🛠️ Hardware & Partition Fixes Applied
-            - ✅ Preserved Blossom Kernel (`boot.img` v2 header), DTBO, and Vendor HALs
-            - ✅ Disabled AVB dm-verity in `vbmeta.img` (`flags=3`)
-            - ✅ Waterdrop Notch Cutout (`M 0,0 H -64 V 60 H 64 V 0 H 0 Z`)
-            - ✅ Status Bar Height (`56.0px`) & Rounded Corners (`33dp`)
-            - ✅ Auto-Brightness Lux/Nits Spline Calibration
-            - ✅ MediaTek `GraphicBufferMapper` & `libui-v32.so` Shims
-            - ✅ Dual 4G VoLTE / CarrierConfig Provisioning
-            - ✅ Cross-platform Fastboot Flasher scripts (`flash_all.sh` & `flash_all.bat`)
-            - ✅ Pre-bundled `Blossom_Notch_Fix_Magisk.zip`
+            ### Hardware & Partition Fixes Applied
+            - Preserved Blossom Kernel (`boot.img` v2 header), DTBO, and Vendor HALs
+            - Disabled AVB dm-verity in `vbmeta.img` (`flags=3`)
+            - Waterdrop Notch Cutout (`M 0,0 H -64 V 60 H 64 V 0 H 0 Z`)
+            - Status Bar Height (`56.0px`) & Rounded Corners (`33dp`)
+            - Auto-Brightness Lux/Nits Spline Calibration
+            - MediaTek `GraphicBufferMapper` & `libui-v32.so` Shims
+            - Dual 4G VoLTE / CarrierConfig Provisioning
+            - Cross-platform Fastboot Flasher scripts (`flash_all.sh` & `flash_all.bat`)
+            - Pre-bundled `Blossom_Notch_Fix_Magisk.zip`
 
-            ### 📲 Flashing Instructions (Fastboot)
+            ### Flashing Instructions (Fastboot)
             1. Extract the downloaded ZIP file.
-            2. Connect phone in **Fastboot mode**.
+            2. Connect phone in Fastboot mode.
             3. Run `flash_all.bat` (Windows) or `./flash_all.sh` (Linux/macOS).
-            4. The script will flash `boot`, `dtbo`, `vbmeta`, reboot into **FastbootD**, flash `super.img`, wipe data, and reboot!
+            4. The script will flash `boot`, `dtbo`, `vbmeta`, reboot into FastbootD, flash `super.img`, wipe data, and reboot.
 
-            ### 📲 Flashing Instructions (Recovery)
-            1. Boot into **TWRP / OrangeFox**.
-            2. Wipe **Dalvik, Cache, System, Vendor, Data**.
+            ### Flashing Instructions (Recovery)
+            1. Boot into TWRP / OrangeFox.
+            2. Wipe Dalvik, Cache, System, Vendor, Data.
             3. Flash the ROM ZIP, format data (type `yes`), and reboot.
           files: |
             /tmp/blossom_auto_port/output/*.zip

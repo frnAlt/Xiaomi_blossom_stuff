@@ -4,16 +4,16 @@ A complete, production-ready, **anti-brick guaranteed** repository containing ex
 
 Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**, **DnA Android Kitchen Porters**, **AOSP / Custom ROM Developers**, and **Treble Maintainers**.
 
-> 🛡️ **100% Anti-Brick & Safe Architecture:**  
+>  **100% Anti-Brick & Safe Architecture:** 
 > Our porting engine and flasher scripts strictly isolate and protect all bootloader (`preloader`, `lk`) and IMEI/NVRAM partitions (`nvram`, `nvdata`, `proinfo`, `tee`). Read the full **[Emergency Unbrick & Safety Manual (EMERGENCY_UNBRICK_GUIDE.md)](EMERGENCY_UNBRICK_GUIDE.md)**!
 
-> 🚀 **Automate Everything on GitHub Actions:**  
-> Want to port any ROM in the cloud without downloading gigabytes of files locally?  
+> **Automate Everything on GitHub Actions:** 
+> Want to port any ROM in the cloud without downloading gigabytes of files locally? 
 > Use our **[GitHub Actions Auto-Port Workflow](#-cloud-auto-port-github-actions-workflow)**! Paste any Port ROM URL -> Click Run -> Real-time AI logs diagnostic -> Download your ready-to-flash Blossom ROM from GitHub Releases & Mirrors!
 
 ---
 
-## 📱 Device Specifications & Target Models
+## Device Specifications & Target Models
 
 | Parameter | Specification |
 |---|---|
@@ -29,91 +29,91 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 
 ---
 
-## 🛡️ Anti-Brick & Protected Partition Architecture
+##  Anti-Brick & Protected Partition Architecture
 
 | Protected Partition | Function | Protection Status |
 |---|---|---|
-| **`preloader`** | Primary SoC Bootloader | 🔒 **100% Protected** (Never touched / zero brick risk) |
-| **`lk` / `lk2`** | LittleKernel Fastboot Bootloader | 🔒 **100% Protected** (Guarantees Fastboot access) |
-| **`nvram` / `nvdata`** | Hardware IMEI, Baseband, Wi-Fi MAC | 🔒 **100% Protected** (Prevents baseband/network loss) |
-| **`tee1` / `tee2`** | TrustZone & Hardware Security | 🔒 **100% Protected** |
-| **`md1img` / `md1dsp`** | Cellular Modem DSP Firmware | 🔒 **100% Protected** |
+| **`preloader`** | Primary SoC Bootloader | **100% Protected** (Never touched / zero brick risk) |
+| **`lk` / `lk2`** | LittleKernel Fastboot Bootloader | **100% Protected** (Guarantees Fastboot access) |
+| **`nvram` / `nvdata`** | Hardware IMEI, Baseband, Wi-Fi MAC | **100% Protected** (Prevents baseband/network loss) |
+| **`tee1` / `tee2`** | TrustZone & Hardware Security | **100% Protected** |
+| **`md1img` / `md1dsp`** | Cellular Modem DSP Firmware | **100% Protected** |
 
 ---
 
-## 🚀 Cloud Auto-Port (GitHub Actions Workflow)
+## Cloud Auto-Port (GitHub Actions Workflow)
 
 You can automatically port any ROM directly in GitHub Cloud using our automated workflow ([`.github/workflows/auto_port.yml`](.github/workflows/auto_port.yml)):
 
 ```mermaid
 graph LR
-    A[Enter Port ROM URL in GitHub] --> B[GitHub Actions Cloud Runner]
-    B --> C[Fast Multi-threaded Download aria2c]
-    C --> D[Extract payload.bin / super.img]
-    D --> E[Auto-Patcher: Overlays, Shims, AVB Bypass]
-    E --> F[Anti-Brick Safety Guard Verification]
-    F --> G[AI Assistant: Real-time Diagnostics]
-    G --> H[Package Flashable ZIP + SHA256]
-    H --> I[Upload to GitHub Releases & Multi-Mirrors]
+ A[Enter Port ROM URL in GitHub] --> B[GitHub Actions Cloud Runner]
+ B --> C[Fast Multi-threaded Download aria2c]
+ C --> D[Extract payload.bin / super.img]
+ D --> E[Auto-Patcher: Overlays, Shims, AVB Bypass]
+ E --> F[Anti-Brick Safety Guard Verification]
+ F --> G[AI Assistant: Real-time Diagnostics]
+ G --> H[Package Flashable ZIP + SHA256]
+ H --> I[Upload to GitHub Releases & Multi-Mirrors]
 ```
 
 ### How to Run the Cloud Auto-Porter:
 1. Go to your GitHub Repository: **`https://github.com/frnAlt/Xiaomi_blossom_stuff`**
 2. Click on the **Actions** tab at the top.
-3. In the left sidebar, click **"🚀 Automatic ROM Porter for Xiaomi Blossom"**.
+3. In the left sidebar, click **" Automatic ROM Porter for Xiaomi Blossom"**.
 4. Click the **"Run workflow"** button on the right.
 5. Fill in the input fields:
-   - **Port ROM URL**: Direct download link of the target ROM (e.g. HyperOS from Redmi Note 11, PixelOS, OneUI, etc.).
-   - **Base ROM URL** *(Optional)*: Direct link to stock Blossom Fastboot ROM (leave empty to use repository stock templates).
-   - **Target Variant**: Select `blossom` (All models), `dandelion` (9A), `angelica` (9C), or `cattail` (9 Activ).
-   - **ROM Name / Type**: Enter name (e.g. `HyperOS`, `MIUI14`, `PixelOS`).
-   - **Custom Upload URL** *(Optional)*: Enter a custom server URL or `https://transfer.sh/` to upload the finished build.
+ - **Port ROM URL**: Direct download link of the target ROM (e.g. HyperOS from Redmi Note 11, PixelOS, OneUI, etc.).
+ - **Base ROM URL** *(Optional)*: Direct link to stock Blossom Fastboot ROM (leave empty to use repository stock templates).
+ - **Target Variant**: Select `blossom` (All models), `dandelion` (9A), `angelica` (9C), or `cattail` (9 Activ).
+ - **ROM Name / Type**: Enter name (e.g. `HyperOS`, `MIUI14`, `PixelOS`).
+ - **Custom Upload URL** *(Optional)*: Enter a custom server URL or `https://transfer.sh/` to upload the finished build.
 6. Click **"Run workflow"**.
 7. The workflow automatically produces:
-   - **GitHub Release** with flashable ZIPs, SHA256 checksums, and flashing scripts (`flash_all.bat` / `flash_all.sh`).
-   - **Anti-Brick Safety Audit Report**.
-   - **AI Diagnostic Report** in the workflow summary.
-   - **Multi-mirror links** (Pixeldrain, Transfer.sh, Custom endpoint).
-   - **Complete build logs and diagnostics artifacts**.
+ - **GitHub Release** with flashable ZIPs, SHA256 checksums, and flashing scripts (`flash_all.bat` / `flash_all.sh`).
+ - **Anti-Brick Safety Audit Report**.
+ - **AI Diagnostic Report** in the workflow summary.
+ - **Multi-mirror links** (Pixeldrain, Transfer.sh, Custom endpoint).
+ - **Complete build logs and diagnostics artifacts**.
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 ├── .github/workflows/
-│   └── auto_port.yml                     # 🚀 GitHub Actions Cloud Auto-Porter Workflow (with AI Diagnostics)
+│ └── auto_port.yml # GitHub Actions Cloud Auto-Porter Workflow (with AI Diagnostics)
 │
-├── tools/                                # ⚙️ Backend Automation & CLI Porting Suite
-│   ├── unbrick_safety_guard.py           # 🛡️ Anti-Brick Safety Guard & Pre-Flash Validator
-│   ├── ai_assistant.py                   # 🤖 AI Diagnostics & Error Root-Cause Analyzer (Offline + Gemini API)
-│   ├── auto_patcher.py                   # 🛠️ Automated Patcher (Fstab Encryption Bypass, AVB Verity, Audio)
-│   ├── auto_porter.py                    # ⚡ End-to-End CLI Porter (Download -> Extract -> Merge -> Package)
-│   ├── port_helper.py                    # 🔧 ROM Injection Engine (Overlays, Shims, Props, Carrier)
-│   ├── super_tools.py                    # 🧩 Dynamic Super Partition Engine (lpmake, AVB flags, Flasher scripts)
-│   ├── multi_uploader.py                 # 🌐 Multi-Mirror Cloud Uploader (Pixeldrain, Transfer.sh, Custom)
-│   ├── build_overlays.py                 # 🔨 RRO Compiler & Signer (aapt + apksigner)
-│   ├── create_magisk_module.py           # 📦 Flashable Magisk/KernelSU ZIP Packager
-│   └── verify_tree.py                    # 🔍 Tree Integrity & Port Diagnostic Validator
+├── tools/ #  Backend Automation & CLI Porting Suite
+│ ├── unbrick_safety_guard.py #  Anti-Brick Safety Guard & Pre-Flash Validator
+│ ├── ai_assistant.py # AI Diagnostics & Error Root-Cause Analyzer (Offline + Gemini API)
+│ ├── auto_patcher.py #  Automated Patcher (Fstab Encryption Bypass, AVB Verity, Audio)
+│ ├── auto_porter.py # End-to-End CLI Porter (Download -> Extract -> Merge -> Package)
+│ ├── port_helper.py # ROM Injection Engine (Overlays, Shims, Props, Carrier)
+│ ├── super_tools.py # Dynamic Super Partition Engine (lpmake, AVB flags, Flasher scripts)
+│ ├── multi_uploader.py # Multi-Mirror Cloud Uploader (Pixeldrain, Transfer.sh, Custom)
+│ ├── build_overlays.py # RRO Compiler & Signer (aapt + apksigner)
+│ ├── create_magisk_module.py # Flashable Magisk/KernelSU ZIP Packager
+│ └── verify_tree.py # Tree Integrity & Port Diagnostic Validator
 │
-├── EMERGENCY_UNBRICK_GUIDE.md            # 🚑 Emergency Unbrick & MTKClient Recovery Manual
-├── DNA_KITCHEN_PORTING_GUIDE.md          # 🍳 Complete Guide for Porting with DnA Kitchen (Base -> Port)
-├── PORTING_GUIDE.md                      # 📖 Standalone Comprehensive Porting Manual
-├── Blossom_Notch_Fix_Magisk.zip          # ⚡ Ready-to-flash Magisk / KernelSU Notch Fix Module
+├── EMERGENCY_UNBRICK_GUIDE.md # Emergency Unbrick & MTKClient Recovery Manual
+├── DNA_KITCHEN_PORTING_GUIDE.md # Complete Guide for Porting with DnA Kitchen (Base -> Port)
+├── PORTING_GUIDE.md # Standalone Comprehensive Porting Manual
+├── Blossom_Notch_Fix_Magisk.zip # Ready-to-flash Magisk / KernelSU Notch Fix Module
 │
-├── apks/                                 # 📦 Compiled, Zipaligned, and Signed Overlay APKs
-├── extracted_display_overlay_xml/        # 🎯 Decompiled & Extracted XMLs from display_overlay.apk
-├── xmls/                                 # 🛠️ Audio, Media, Thermal, Carrier & VINTF XMLs
-├── port_libs_and_shims/                  # ⚙️ Essential Porting Libraries & Shims
-├── rootdir/                              # 📜 Init scripts (init.mt6765.rc, init.mt6762.rc) & fstabs
-├── sepolicy/                             # 🔒 SELinux policies (vendor & private)
-├── props/                                # ⚙️ Props (system.prop, vendor.prop, product.prop, odm.prop)
-└── build_makefiles/                      # 🏗️ BoardConfig.mk, device.mk, patches, extract-files.sh
+├── apks/ # Compiled, Zipaligned, and Signed Overlay APKs
+├── extracted_display_overlay_xml/ # Decompiled & Extracted XMLs from display_overlay.apk
+├── xmls/ #  Audio, Media, Thermal, Carrier & VINTF XMLs
+├── port_libs_and_shims/ #  Essential Porting Libraries & Shims
+├── rootdir/ # Init scripts (init.mt6765.rc, init.mt6762.rc) & fstabs
+├── sepolicy/ # SELinux policies (vendor & private)
+├── props/ #  Props (system.prop, vendor.prop, product.prop, odm.prop)
+└── build_makefiles/ #  BoardConfig.mk, device.mk, patches, extract-files.sh
 ```
 
 ---
 
-## ⚙️ Backend Automation CLI Tools
+##  Backend Automation CLI Tools
 
 Run all porting, patching, safety audit, AI diagnostic, and packaging tasks locally:
 
@@ -139,9 +139,9 @@ python3 tools/auto_patcher.py --port-dir /path/to/extracted_port_rom
 Downloads, unpacks `payload.bin`/`super.img`, merges Base + Port partitions, injects fixes, and packages a flashable ZIP:
 ```bash
 python3 tools/auto_porter.py \
-  --port-url "https://example.com/hyperos_port.zip" \
-  --variant dandelion \
-  --rom-type HyperOS
+ --port-url "https://example.com/hyperos_port.zip" \
+ --variant dandelion \
+ --rom-type HyperOS
 ```
 
 ### 5. Dynamic Super Partition & Flasher Generator (`tools/super_tools.py`)
@@ -158,7 +158,7 @@ python3 tools/multi_uploader.py --file Blossom_Port_HyperOS_dandelion.zip
 
 ---
 
-## 🗺️ Master File-to-Destination Mapping Table
+##  Master File-to-Destination Mapping Table
 
 | Source File / Folder in this Repository | Destination in MIUI / HyperOS Port | Destination in AOSP / Custom ROM Tree | Destination in Treble GSI |
 |---|---|---|---|
@@ -184,30 +184,30 @@ python3 tools/multi_uploader.py --file Blossom_Port_HyperOS_dandelion.zip
 
 ---
 
-## ⚡ Complete Treble GSI Porting & Usage Guide
+## Complete Treble GSI Porting & Usage Guide
 
 If you are running or installing a **Generic System Image (GSI)** (such as Phh AOSP, PixelExperience GSI, crDroid GSI, LineageOS GSI, EvolutionX GSI, etc.) on Xiaomi Blossom:
 
 ### A. Flashing a GSI via Fastboot
 1. Download an **`arm64_bvN`** or **`arm64_bgN`** (ARM64 A/B) GSI image.
 2. Reboot phone to FastbootD mode:
-   ```bash
-   adb reboot fastboot
-   ```
+ ```bash
+ adb reboot fastboot
+ ```
 3. Flash the GSI system image:
-   ```bash
-   fastboot erase system
-   fastboot flash system <gsi_image_name>.img
-   fastboot -w
-   fastboot reboot
-   ```
+ ```bash
+ fastboot erase system
+ fastboot flash system <gsi_image_name>.img
+ fastboot -w
+ fastboot reboot
+ ```
 
 ### B. Installing the Notch & Display Overlay Fix on GSI
 Simply flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Magisk.zip) directly in the Magisk or KernelSU app and reboot!
 
 ---
 
-## 🔧 Troubleshooting Common Blossom Porting Bugs
+## Troubleshooting Common Blossom Porting Bugs
 
 | Symptom / Bug | Root Cause | Fix / Solution |
 |---|---|---|
@@ -219,24 +219,24 @@ Simply flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Mag
 
 ---
 
-## 🎯 Display Cutout Technical Reference
+## Display Cutout Technical Reference
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Waterdrop Notch Path for Xiaomi Redmi 9A / 9C / 9 Activ -->
 <resources>
-    <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
-    <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
-    <dimen name="status_bar_height_default">56.0px</dimen>
-    <dimen name="status_bar_height_portrait">56.0px</dimen>
-    <dimen name="status_bar_height_landscape">24.0dp</dimen>
-    <dimen name="rounded_corner_radius">33dp</dimen>
+ <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
+ <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
+ <dimen name="status_bar_height_default">56.0px</dimen>
+ <dimen name="status_bar_height_portrait">56.0px</dimen>
+ <dimen name="status_bar_height_landscape">24.0dp</dimen>
+ <dimen name="rounded_corner_radius">33dp</dimen>
 </resources>
 ```
 
 ---
 
-## 📄 License & Credits
+## License & Credits
 - Xiaomi Blossom Device Tree maintained by [crDroid Android](https://github.com/crdroidandroid) & [LineageOS](https://github.com/LineageOS).
 - DnA Android Kitchen by the DnA Developer Team.
 - Apache 2.0 License.

@@ -39,9 +39,7 @@ class BlossomAutoPatcher:
         content = fstab_path.read_text(encoding="utf-8", errors="ignore")
         original = content
 
-        # Replace fileencryption flags with encryptable
         content = re.sub(r"fileencryption=[a-zA-Z0-9_\-:]+", "encryptable=userdata", content)
-        # Remove wait,avb flags that cause dm-verity panics
         content = re.sub(r",avb=[a-zA-Z0-9_\-]+", "", content)
         content = re.sub(r",avb", "", content)
 
@@ -83,7 +81,6 @@ class BlossomAutoPatcher:
         for audio_conf in port_dir.rglob("audio_policy_configuration.xml"):
             if audio_conf.is_file():
                 content = audio_conf.read_text(encoding="utf-8", errors="ignore")
-                # Fix remote submix module if missing
                 if "r_submix" not in content:
                     logger.info("  -> Audio policy verified.")
 
@@ -98,7 +95,7 @@ class BlossomAutoPatcher:
         self.apply_camera_and_graphics_patches(port_dir)
         self.patch_audio_routing_parameters(port_dir)
 
-        logger.info("✅ All automatic patches applied successfully!")
+        logger.info("All automatic patches applied successfully.")
         return True
 
 

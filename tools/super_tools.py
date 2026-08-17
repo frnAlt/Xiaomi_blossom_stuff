@@ -57,33 +57,26 @@ class SuperImageBuilder:
             return True
 
         data = bytearray(vbmeta_input.read_bytes())
-        # AVB header magic: "AVB0"
         magic_offset = data.find(b"AVB0")
         if magic_offset == -1:
             logger.warning("Could not find AVB0 magic in vbmeta image.")
             return False
 
-        # In AVB2.0 header: flags is at offset 120 (0x78) from magic start (uint32 big-endian)
         flags_offset = magic_offset + 120
         if len(data) >= flags_offset + 4:
-            # Set flags = 3 (AVB_VBMETA_IMAGE_FLAGS_HAS_ROLLBACK_INDEX_LOCATION_ENABLED | DISABLE_VERITY | DISABLE_VERIFICATION)
             struct.pack_into(">I", data, flags_offset, 3)
             vbmeta_output.parent.mkdir(parents=True, exist_ok=True)
             vbmeta_output.write_bytes(data)
-            logger.info("✅ vbmeta patched: dm-verity and verification successfully disabled.")
+            logger.info("vbmeta patched: dm-verity and verification successfully disabled.")
             return True
         return False
 
     def generate_clean_vbmeta(self, output_path: Path) -> None:
         """Creates a minimal valid AVB vbmeta image with verification disabled."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        # 64KB zero-filled with AVB0 header
         buf = bytearray(65536)
-        # Magic: AVB0 (0x41 0x56 0x42 0x30)
         buf[0:4] = b"AVB0"
-        # Major: 1, Minor: 0
         struct.pack_into(">II", buf, 4, 1, 0)
-        # Flags at 120: 3
         struct.pack_into(">I", buf, 120, 3)
         output_path.write_bytes(buf)
         logger.info(f"Generated clean disabled vbmeta image at {output_path}")
@@ -96,15 +89,12 @@ class SuperImageBuilder:
     ) -> bool:
         """
         Builds a dynamic partition super.img matching Xiaomi Blossom's exact partition table using lpmake.
-        partition_images: Dict mapping 'system', 'vendor', 'product', 'system_ext', 'odm' to raw .img paths.
         """
-        logger.info(f"Constructing super.img with Blossom partition geometry...")
+        logger.info("Constructing super.img with Blossom partition geometry...")
         output_super.parent.mkdir(parents=True, exist_ok=True)
 
         lpmake_bin = shutil.which("lpmake")
         if not lpmake_bin:
-            logger.warning("lpmake binary not found in PATH! Searching local tools or SDK...")
-            # Fallback check
             for cand in ["/usr/local/bin/lpmake", "/usr/bin/lpmake", "./tools/bin/lpmake"]:
                 if Path(cand).exists():
                     lpmake_bin = cand
@@ -135,7 +125,7 @@ class SuperImageBuilder:
                     "--partition", f"{part_name}:readonly:{size}:main",
                     "--image", f"{part_name}={img_path}"
                 ])
-                logger.info(f"  • Partition '{part_name}': {size / (1024 * 1024):.2f} MB ({img_path.name})")
+                logger.info(f"  Partition '{part_name}': {size / (1024 * 1024):.2f} MB ({img_path.name})")
 
         if total_part_size > self.specs.MAIN_GROUP_SIZE:
             logger.error(f"Total partitions size ({total_part_size}) exceeds main group limit ({self.specs.MAIN_GROUP_SIZE})!")
@@ -143,13 +133,13 @@ class SuperImageBuilder:
 
         cmd.extend(["--output", str(output_super)])
 
-        logger.info(f"Executing lpmake command...")
+        logger.info("Executing lpmake command...")
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             logger.error(f"lpmake failed:\n{res.stderr}")
             return False
 
-        logger.info(f"✅ super.img created successfully: {output_super.name} ({output_super.stat().st_size / (1024 * 1024):.2f} MB)")
+        logger.info(f"super.img created successfully: {output_super.name} ({output_super.stat().st_size / (1024 * 1024):.2f} MB)")
         return True
 
     def generate_flashing_scripts(self, output_dir: Path, rom_title: str = "Xiaomi Blossom Custom Port") -> None:
@@ -164,12 +154,11 @@ class SuperImageBuilder:
 
 set -e
 echo "=================================================================="
-echo " 🚀 Flashing {rom_title} to Xiaomi Blossom"
+echo " Flashing {rom_title} to Xiaomi Blossom"
 echo "=================================================================="
 
-# Check Fastboot connection
 if ! fastboot devices | grep -q "fastboot"; then
-    echo "❌ Error: No device detected in fastboot mode. Please connect phone in Fastboot mode."
+    echo "Error: No device detected in fastboot mode. Please connect phone in Fastboot mode."
     exit 1
 fi
 
@@ -206,7 +195,7 @@ echo ">> 6. Rebooting into System..."
 fastboot reboot
 
 echo "=================================================================="
-echo " ✅ Flashing Complete! Your device is now rebooting."
+echo " Flashing Complete! Your device is now rebooting."
 echo "=================================================================="
 '''
         (output_dir / "flash_all.sh").write_text(sh_content, encoding="utf-8")
@@ -222,7 +211,7 @@ title {rom_title} Flasher
 color 0B
 
 echo ==================================================================
-echo  🚀 Flashing {rom_title} to Xiaomi Blossom
+echo  Flashing {rom_title} to Xiaomi Blossom
 echo ==================================================================
 echo.
 
@@ -253,7 +242,7 @@ fastboot reboot
 
 echo.
 echo ==================================================================
-echo  ✅ Flashing Complete! Press any key to exit.
+echo  Flashing Complete! Press any key to exit.
 echo ==================================================================
 pause
 '''

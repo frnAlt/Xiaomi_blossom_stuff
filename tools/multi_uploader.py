@@ -51,7 +51,7 @@ class MultiMirrorUploader:
             if data.get("success"):
                 file_id = data["id"]
                 url = f"https://pixeldrain.com/u/{file_id}"
-                logger.info(f"✅ Pixeldrain link: {url}")
+                logger.info(f"Pixeldrain link: {url}")
                 return url
         except Exception as e:
             logger.warning(f"Pixeldrain upload failed: {e}")
@@ -68,7 +68,7 @@ class MultiMirrorUploader:
             res = subprocess.run(cmd, capture_output=True, text=True, check=True)
             url = res.stdout.strip()
             if url.startswith("http"):
-                logger.info(f"✅ Transfer.sh link: {url}")
+                logger.info(f"Transfer.sh link: {url}")
                 return url
         except Exception as e:
             logger.warning(f"Transfer.sh upload failed: {e}")
@@ -80,7 +80,7 @@ class MultiMirrorUploader:
         try:
             cmd = ["curl", "-s", "-T", str(self.file_path), custom_url]
             res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            logger.info(f"✅ Custom upload completed.")
+            logger.info("Custom upload completed.")
             return custom_url
         except Exception as e:
             logger.warning(f"Custom upload failed: {e}")
@@ -89,17 +89,17 @@ class MultiMirrorUploader:
     def generate_markdown_summary(self, mirrors: Dict[str, str]) -> str:
         """Creates a formatted markdown summary table with download mirrors and checksums."""
         lines = [
-            f"## 📦 ROM Download & Integrity Summary",
-            f"- **Filename:** `{self.file_path.name}`",
-            f"- **Size:** `{self.size_mb:.2f} MB`",
-            f"- **MD5:** `{self.md5}`",
-            f"- **SHA256:** `{self.sha256}`\n",
+            f"## ROM Download and Integrity Summary",
+            f"- Filename: `{self.file_path.name}`",
+            f"- Size: `{self.size_mb:.2f} MB`",
+            f"- MD5: `{self.md5}`",
+            f"- SHA256: `{self.sha256}`\n",
             "| Mirror Provider | Download Link | Status |",
             "|---|---|---|"
         ]
 
         for provider, link in mirrors.items():
-            lines.append(f"| **{provider}** | [Download Here]({link}) | ✅ Live |")
+            lines.append(f"| **{provider}** | [Download Here]({link}) | Live |")
 
         return "\n".join(lines)
 
@@ -114,7 +114,6 @@ def main() -> None:
     uploader = MultiMirrorUploader(args.file)
     mirrors: Dict[str, str] = {}
 
-    # Upload to mirrors
     if args.custom_url:
         custom_res = uploader.upload_custom(args.custom_url)
         if custom_res:

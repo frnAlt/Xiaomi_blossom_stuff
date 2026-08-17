@@ -226,13 +226,13 @@ class BlossomPortEngine:
         self.inject_carrier_and_audio_configs(port_dir)
         self.patch_build_properties(port_dir, variant)
 
-        logger.info("✅ Blossom Port Pipeline completed successfully!")
+        logger.info("Blossom Port Pipeline completed successfully.")
         return True
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Xiaomi Blossom Automated ROM Port Engine")
-    parser.add_argument("--port-dir", type=Path, required=True, help="Path to extracted Port ROM directory (containing system, vendor, product)")
+    parser.add_argument("--port-dir", type=Path, required=True, help="Path to extracted Port ROM directory")
     parser.add_argument("--variant", choices=["blossom", "dandelion", "angelica", "angelican", "cattail"], default="blossom", help="Hardware SKU variant")
 
     args = parser.parse_args()

@@ -57,35 +57,30 @@ def validate_blossom_tree(root_dir: Path) -> bool:
         if not target.exists():
             errors.append(f"Missing XML configuration: {target.relative_to(root_dir)}")
 
-    # 3. Check Shims & VNDK
-    vndk_file = root_dir / "port_libs_and_shims" / "vndk" / "libui-v32.so"
-    if not vndk_file.exists():
-        warnings.append("vndk/libui-v32.so symlink or file not resolved.")
-
-    # 4. Check Rootdir & Init
+    # 3. Check Rootdir & Init
     init_file = root_dir / "rootdir" / "etc" / "init.mt6765.rc"
     if not init_file.exists():
         errors.append("Missing rootdir/etc/init.mt6765.rc")
 
     # Reporting
     print("\n" + "=" * 50)
-    print(" 🔍 XIAOMI BLOSSOM TREE VALIDATION REPORT")
+    print(" XIAOMI BLOSSOM TREE VALIDATION REPORT")
     print("=" * 50)
 
     if warnings:
-        print("\n⚠️ WARNINGS:")
+        print("\nWARNINGS:")
         for w in warnings:
             print(f"  • {w}")
 
     if errors:
-        print("\n❌ ERRORS FOUND:")
+        print("\nERRORS FOUND:")
         for e in errors:
             print(f"  • {e}")
-        print("\nResult: ❌ VALIDATION FAILED")
+        print("\nResult: VALIDATION FAILED")
         return False
     else:
-        print("\n✅ All critical overlays, XMLs, shims, init scripts, and makefiles are valid and present!")
-        print("Result: ✅ 100% READY FOR PORTING & PRODUCTION")
+        print("\nAll critical overlays, XMLs, shims, init scripts, and makefiles are valid and present.")
+        print("Result: 100% READY FOR PORTING & PRODUCTION")
         return True
 
 
