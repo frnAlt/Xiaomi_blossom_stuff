@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Xiaomi Blossom Automated End-to-End ROM Porting Engine.
-Handles automatic downloading, partition extraction, merging, overlay/shim injection,
-repacking, and upload for GitHub Actions and local developers.
+Developer-Grade Automation: Downloads, unpacks, merges Base+Port, injects overlays/shims/props,
+patches AVB/vbmeta, builds super.img, generates Fastboot flasher scripts, and creates flashable archives.
 """
 
 from __future__ import annotations
@@ -16,12 +16,14 @@ import shutil
 import subprocess
 import sys
 import time
+import zipfile
 from pathlib import Path
 from typing import Dict, List, Optional
 
 # Ensure tools directory is in sys.path
 sys.path.insert(0, str(Path(__file__).parent))
 from port_helper import BlossomPortEngine
+from super_tools import SuperImageBuilder, BlossomPartitionSpecs
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,18 +52,19 @@ class AutoPorter:
         self.port_dir = self.work_dir / "port"
         self.out_dir = self.work_dir / "output"
         self.build_dir = self.work_dir / "build_root"
+        self.images_dir = self.build_dir / "images"
 
-        for d in [self.base_dir, self.port_dir, self.out_dir, self.build_dir]:
+        for d in [self.base_dir, self.port_dir, self.out_dir, self.build_dir, self.images_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         self.engine = BlossomPortEngine(root_dir=self.repo_root)
+        self.super_builder = SuperImageBuilder()
 
     def download_file(self, url: str, dest_dir: Path, filename_hint: str = "rom_package") -> Path:
-        """Downloads a ROM archive using aria2c or curl."""
+        """Downloads a ROM archive using aria2c or curl with resilient fallback."""
         logger.info(f"Downloading from: {url}")
         dest_dir.mkdir(parents=True, exist_ok=True)
 
-        # Detect filename from URL or default
         url_clean = url.split("?")[0]
         name = Path(url_clean).name or f"{filename_hint}.zip"
         target_file = dest_dir / name
@@ -76,7 +79,7 @@ class AutoPorter:
         else:
             cmd = ["curl", "-L", "-k", "-o", str(target_file), url]
 
-        logger.info(f"Running download command: {' '.join(cmd[:3])}...")
+        logger.info(f"Executing downloader: {' '.join(cmd[:3])}...")
         subprocess.run(cmd, check=True)
         logger.info(f"Downloaded: {target_file.name} ({target_file.stat().st_size} bytes)")
         return target_file
@@ -97,7 +100,6 @@ class AutoPorter:
             else:
                 subprocess.run(["unzip", "-q", "-o", str(archive_path), "-d", str(extract_to)], check=True)
         else:
-            # Fallback 7z
             subprocess.run(["7z", "x", "-y", f"-o{extract_to}", str(archive_path)], check=True)
 
     def extract_payload_if_present(self, search_dir: Path, target_dir: Path) -> bool:
@@ -117,17 +119,18 @@ class AutoPorter:
             subprocess.run(["payload-dumper-go", "-o", str(target_dir), str(payload_bin)], check=True)
             return True
         else:
-            logger.warning("payload-dumper-go not found in PATH! Attempting 7z extraction...")
+            logger.warning("payload-dumper-go not found in PATH! Falling back to 7z extraction...")
             subprocess.run(["7z", "x", "-y", f"-o{target_dir}", str(payload_bin)], check=True)
             return True
 
     def assemble_ported_firmware(self) -> Path:
         """
         Merges Blossom Base hardware components with Port ROM system/UI components,
-        injects overlays, shims, carrier configs, and builds the flashable package.
+        injects overlays, shims, carrier configs, patches AVB vbmeta, generates flasher scripts,
+        and packages flashable Fastboot & Recovery archives.
         """
         logger.info("==================================================")
-        logger.info(" ASSEMBLE PORTED FIRMWARE FOR XIAOMI BLOSSOM")
+        logger.info(" 🚀 ASSEMBLE PORTED FIRMWARE FOR XIAOMI BLOSSOM")
         logger.info("==================================================")
 
         # 1. Prepare build root structure
@@ -139,22 +142,29 @@ class AutoPorter:
         for d in [merged_system, merged_vendor, merged_product, merged_system_ext]:
             d.mkdir(parents=True, exist_ok=True)
 
-        # 2. Copy Base Hardware partitions (boot.img, dtbo, vendor)
-        logger.info("Copying Blossom Base Hardware components (boot.img, vendor)...")
-        # Search for boot.img
-        boot_img = None
-        for p in self.base_dir.rglob("boot.img"):
-            boot_img = p
-            shutil.copy2(p, self.build_dir / "boot.img")
-            logger.info(f"  -> Preserved Base Kernel: {p.name}")
+        # 2. Preserve Base Hardware components (boot.img, dtbo, vbmeta, vendor)
+        logger.info(">> Preserving Base Hardware components...")
+        for boot_candidate in self.base_dir.rglob("boot.img"):
+            shutil.copy2(boot_candidate, self.build_dir / "boot.img")
+            logger.info(f"  • Base Kernel: {boot_candidate.name}")
             break
 
         for dtbo in self.base_dir.rglob("dtbo.img"):
             shutil.copy2(dtbo, self.build_dir / "dtbo.img")
-            logger.info("  -> Preserved Base DTBO")
+            logger.info("  • Base DTBO preserved")
             break
 
-        # Search for vendor files in base
+        # Check for vbmeta and patch flags to disable verity
+        base_vbmeta = None
+        for vb in self.base_dir.rglob("vbmeta.img"):
+            base_vbmeta = vb
+            break
+        if base_vbmeta:
+            self.super_builder.patch_vbmeta_disable_verification(base_vbmeta, self.build_dir / "vbmeta.img")
+        else:
+            self.super_builder.generate_clean_vbmeta(self.build_dir / "vbmeta.img")
+
+        # Copy base vendor
         base_vendor_src = None
         for candidate in ["vendor", "vendor_extracted", "images/vendor"]:
             cand_path = self.base_dir / candidate
@@ -164,45 +174,59 @@ class AutoPorter:
 
         if base_vendor_src:
             shutil.copytree(base_vendor_src, merged_vendor, symlinks=True, dirs_exist_ok=True)
-            logger.info(f"  -> Preserved Base Vendor from {base_vendor_src}")
+            logger.info(f"  • Base Vendor preserved from {base_vendor_src}")
         else:
-            logger.info("  -> Copying vendor templates from Blossom Porting Kit...")
+            logger.info("  • Using Blossom Porting Kit vendor & config templates...")
             if (self.repo_root / "xmls").exists():
                 shutil.copytree(self.repo_root / "xmls", merged_vendor / "etc", symlinks=True, dirs_exist_ok=True)
 
         # 3. Copy Port ROM System/Product partitions
-        logger.info("Copying Port ROM System, Product, System_ext components...")
+        logger.info(">> Ingesting Port ROM system, product, and system_ext partitions...")
         for part in ["system", "product", "system_ext"]:
             for cand in [self.port_dir / part, self.port_dir / f"{part}_extracted", self.port_dir / "images" / part]:
                 if cand.is_dir():
                     target_dest = self.build_dir / part
                     shutil.copytree(cand, target_dest, symlinks=True, dirs_exist_ok=True)
-                    logger.info(f"  -> Injected Port {part} from {cand}")
+                    logger.info(f"  • Ingested Port partition '{part}'")
                     break
 
+        # Also search for standalone partition images if extracted
+        part_images: Dict[str, Path] = {}
+        for p_name in ["system", "vendor", "product", "system_ext", "odm"]:
+            for img in self.port_dir.rglob(f"{p_name}.img"):
+                part_images[p_name] = img
+                break
+
         # 4. Run Blossom Port Engine to inject overlays, shims, configs, props
-        logger.info("Running Blossom Port Engine injection...")
+        logger.info(">> Running Blossom Port Engine injection...")
         self.engine.run_port_pipeline(self.build_dir, variant=self.variant)
 
-        # 5. Add Magisk module and rootdir scripts to output
-        logger.info("Embedding Blossom Magisk Notch Fix module...")
+        # 5. Build super.img if lpmake and images are available
+        if part_images and shutil.which("lpmake"):
+            logger.info(">> Building dynamic partition super.img...")
+            self.super_builder.build_super_image(part_images, self.build_dir / "super.img", sparse=True)
+
+        # 6. Generate Fastboot Flashing Automation Scripts (.sh & .bat)
+        self.super_builder.generate_flashing_scripts(self.build_dir, rom_title=f"{self.rom_type} Port for Xiaomi Blossom")
+
+        # 7. Embed Prebuilt Magisk Notch Fix Module
         magisk_zip = self.repo_root / "Blossom_Notch_Fix_Magisk.zip"
         if magisk_zip.exists():
             shutil.copy2(magisk_zip, self.build_dir / "Blossom_Notch_Fix_Magisk.zip")
 
-        # 6. Package final flashable archive
+        # 8. Package final flashable archive
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         package_name = f"Blossom_Port_{self.rom_type}_{self.variant}_{timestamp}.zip"
         output_zip = self.out_dir / package_name
 
         logger.info(f"Packaging final Port ROM archive: {output_zip.name}...")
-        with shutil.ZipFile if hasattr(shutil, 'ZipFile') else zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+        with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zf:
             for file_path in sorted(self.build_dir.rglob("*")):
                 if file_path.is_file():
                     arcname = file_path.relative_to(self.build_dir)
                     zf.write(file_path, arcname)
 
-        # Compute Checksums
+        # Compute Checksums & Metadata
         sha256 = hashlib.sha256(output_zip.read_bytes()).hexdigest()
         md5 = hashlib.md5(output_zip.read_bytes()).hexdigest()
 
@@ -214,7 +238,9 @@ class AutoPorter:
             "size_bytes": output_zip.stat().st_size,
             "sha256": sha256,
             "md5": md5,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "super_partition_size": BlossomPartitionSpecs.SUPER_PARTITION_SIZE,
+            "main_group_size": BlossomPartitionSpecs.MAIN_GROUP_SIZE
         }
 
         meta_file = self.out_dir / f"{package_name}.json"
@@ -263,7 +289,7 @@ def main() -> None:
     elif args.base_file:
         base_archive = args.base_file
     else:
-        logger.info("No Base ROM specified; using Blossom repository templates as base.")
+        logger.info("No Base ROM specified; using Blossom repository hardware templates as base.")
         base_archive = None
 
     if base_archive and base_archive.exists():
@@ -292,5 +318,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    import zipfile
     main()

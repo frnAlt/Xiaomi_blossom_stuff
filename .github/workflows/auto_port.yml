@@ -55,7 +55,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 📦 Install Build Dependencies & Tools
+      - name: 📦 Install Build Dependencies & Partition Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y aria2 p7zip-full zstd brotli liblz4-tool \
@@ -65,7 +65,15 @@ jobs:
           PAYLOAD_URL="https://github.com/ssut/payload-dumper-go/releases/download/1.2.2/payload-dumper-go_1.2.2_linux_amd64.tar.gz"
           wget -qO- "$PAYLOAD_URL" | sudo tar -xz -C /usr/local/bin payload-dumper-go
           sudo chmod +x /usr/local/bin/payload-dumper-go
-          echo "payload-dumper-go version: $(payload-dumper-go -v || echo 'installed')"
+
+          # Install lpmake & lpunpack prebuilts for dynamic partitions
+          wget -qO /tmp/lpmake.zip "https://github.com/carlitoxxpro/lpmake/releases/download/v1.0/lpmake-x86_64.zip" || true
+          if [ -f /tmp/lpmake.zip ]; then
+            sudo unzip -o /tmp/lpmake.zip -d /usr/local/bin/ || true
+            sudo chmod +x /usr/local/bin/lpmake /usr/local/bin/lpunpack 2>/dev/null || true
+          fi
+
+          echo "Tools setup complete."
 
       - name: 🔨 Build Overlays & Magisk Module
         run: |
@@ -131,19 +139,27 @@ jobs:
             - **Build Number:** `#${{ github.run_number }}`
             - **Commit:** `${{ github.sha }}`
 
-            ### 🛠️ Included Fixes
+            ### 🛠️ Hardware & Partition Fixes Applied
+            - ✅ Preserved Blossom Kernel (`boot.img` v2 header), DTBO, and Vendor HALs
+            - ✅ Disabled AVB dm-verity in `vbmeta.img` (`flags=3`)
             - ✅ Waterdrop Notch Cutout (`M 0,0 H -64 V 60 H 64 V 0 H 0 Z`)
             - ✅ Status Bar Height (`56.0px`) & Rounded Corners (`33dp`)
             - ✅ Auto-Brightness Lux/Nits Spline Calibration
             - ✅ MediaTek `GraphicBufferMapper` & `libui-v32.so` Shims
             - ✅ Dual 4G VoLTE / CarrierConfig Provisioning
+            - ✅ Cross-platform Fastboot Flasher scripts (`flash_all.sh` & `flash_all.bat`)
             - ✅ Pre-bundled `Blossom_Notch_Fix_Magisk.zip`
 
-            ### 📲 Flashing Instructions
-            1. Reboot phone into **TWRP / OrangeFox** or **FastbootD**.
+            ### 📲 Flashing Instructions (Fastboot)
+            1. Extract the downloaded ZIP file.
+            2. Connect phone in **Fastboot mode**.
+            3. Run `flash_all.bat` (Windows) or `./flash_all.sh` (Linux/macOS).
+            4. The script will flash `boot`, `dtbo`, `vbmeta`, reboot into **FastbootD**, flash `super.img`, wipe data, and reboot!
+
+            ### 📲 Flashing Instructions (Recovery)
+            1. Boot into **TWRP / OrangeFox**.
             2. Wipe **Dalvik, Cache, System, Vendor, Data**.
-            3. Flash the attached ROM ZIP.
-            4. Format Data (type `yes`) and Reboot!
+            3. Flash the ROM ZIP, format data (type `yes`), and reboot.
           files: |
             /tmp/blossom_auto_port/output/*.zip
             /tmp/blossom_auto_port/output/*.json
