@@ -1,12 +1,13 @@
 # Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs & Complete Porting Kit
 
-A complete, production-ready repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
+A complete, production-ready repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, backend automation tools, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
 
 Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**, **DnA Android Kitchen Porters**, **AOSP / Custom ROM Developers**, and **Treble Maintainers**.
 
-> 📖 **Quick Links to Guides:**  
+> 📖 **Quick Links to Guides & Tools:**  
 > - **[DnA Android Kitchen Porting Guide (DNA_KITCHEN_PORTING_GUIDE.md)](DNA_KITCHEN_PORTING_GUIDE.md)**: Full guide on unpacking, merging Base + Port ROMs, and repacking flashable zip / super.img!  
-> - **[General Porting Guide (PORTING_GUIDE.md)](PORTING_GUIDE.md)**: File-to-destination mapping tables, AOSP tree setup, and bug fixes!
+> - **[General Porting Guide (PORTING_GUIDE.md)](PORTING_GUIDE.md)**: File-to-destination mapping tables, AOSP tree setup, and bug fixes!  
+> - **[Backend Automation Suite (`tools/`)](#-backend-automation-cli-tools)**: Python CLI tools to automate overlay compiling, ROM porting injection, Magisk packaging, and tree validation!
 
 ---
 
@@ -29,8 +30,16 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 ## 📁 Repository Structure
 
 ```text
+├── tools/                                # ⚙️ Backend Automation & CLI Porting Suite
+│   ├── port_helper.py                    # Automated ROM Port Engine (Overlays, Shims, Props injection)
+│   ├── build_overlays.py                 # Automated RRO Overlay Compiler & Signer (aapt + apksigner)
+│   ├── create_magisk_module.py           # Flashable Magisk/KernelSU ZIP Packager
+│   └── verify_tree.py                    # Tree Integrity & Port Diagnostic Validator
+│
 ├── DNA_KITCHEN_PORTING_GUIDE.md          # 🍳 Complete Guide for Porting with DnA Kitchen (Base -> Port)
 ├── PORTING_GUIDE.md                      # 📖 Standalone Comprehensive Porting Manual
+├── Blossom_Notch_Fix_Magisk.zip          # ⚡ Ready-to-flash Magisk / KernelSU Notch Fix Module
+│
 ├── apks/                                 # 📦 Compiled, Zipaligned, and Signed Overlay APKs
 │   ├── FrameworksResOverlayBlossom.apk   # Full framework overlay (Notch, Brightness, Doze, Power)
 │   ├── DisplayOverlayBlossom.apk         # Dedicated Display Cutout & Statusbar overlay
@@ -94,6 +103,40 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 
 ---
 
+## ⚙️ Backend Automation CLI Tools
+
+This repository includes a production-ready Python backend suite in [`tools/`](tools/) to automate ROM porting tasks:
+
+### 1. Automated ROM Porting Engine (`tools/port_helper.py`)
+Automatically injects overlays, shims, carrier configs, and patches `build.prop` for any extracted Port ROM:
+```bash
+# Auto-patch a ported ROM directory for Redmi 9A (dandelion)
+python3 tools/port_helper.py --port-dir /path/to/extracted_port_rom --variant dandelion
+
+# Auto-patch for Redmi 9C (angelica)
+python3 tools/port_helper.py --port-dir /path/to/extracted_port_rom --variant angelica
+```
+
+### 2. Overlay Compiler & Signer (`tools/build_overlays.py`)
+Compiles, zip-aligns, and cryptographically signs all RRO overlays from source:
+```bash
+python3 tools/build_overlays.py --rro-dir rro_overlays --output-dir apks
+```
+
+### 3. Flashable Magisk ZIP Packager (`tools/create_magisk_module.py`)
+Generates the ready-to-flash `Blossom_Notch_Fix_Magisk.zip` module:
+```bash
+python3 tools/create_magisk_module.py --output Blossom_Notch_Fix_Magisk.zip
+```
+
+### 4. Tree Integrity & Port Diagnostic Validator (`tools/verify_tree.py`)
+Runs comprehensive health checks on overlays, shims, XMLs, and props:
+```bash
+python3 tools/verify_tree.py
+```
+
+---
+
 ## 🍳 Quick Summary: Using DnA Android Kitchen to Port ROMs to Blossom
 
 See **[DNA_KITCHEN_PORTING_GUIDE.md](DNA_KITCHEN_PORTING_GUIDE.md)** for full details.
@@ -105,10 +148,7 @@ See **[DNA_KITCHEN_PORTING_GUIDE.md](DNA_KITCHEN_PORTING_GUIDE.md)** for full de
    - Keep **100% BASE**: `boot.img` (Kernel), `dtbo.img`, and `vendor/` (HALs/Drivers).
    - Take **PORT ROM**: `system/`, `product/`, `system_ext/`.
 3. **Inject Blossom Fixes into Port ROM**:
-   - Place `apks/DisplayOverlayBlossom.apk` into `system/product/overlay/`.
-   - Place `apks/FrameworksResOverlayBlossom.apk` into `vendor/overlay/`.
-   - Add `port_libs_and_shims/libshims/libshim_ui` and `port_libs_and_shims/vndk/libui-v32.so` for graphics/camera stability.
-   - Set device props in `build.prop`: `ro.product.device=blossom`, `ro.miui.notch=1`, `ro.miui.has_real_notch=1`.
+   - Run `python3 tools/port_helper.py --port-dir <dna_kitchen_port_project_path>` to automate injection.
 4. **Repack & Flash**:
    - Repack `super.img` or flashable zip in DnA Kitchen and flash via FastbootD / TWRP.
 
@@ -127,9 +167,9 @@ See **[DNA_KITCHEN_PORTING_GUIDE.md](DNA_KITCHEN_PORTING_GUIDE.md)** for full de
 | **`xmls/carrier/vendor_miui.xml`** | `/vendor/etc/carrier/vendor_miui.xml` | `rro_overlays/CarrierConfigOverlayBlossom/res/xml/` | `/vendor/etc/carrier/vendor_miui.xml` |
 | **`xmls/audio/*.xml`** | `/vendor/etc/audio/` & `/vendor/etc/audio_policy_configuration.xml` | `device/xiaomi/blossom/configs/audio/` | Stock vendor retains this |
 | **`xmls/media/*.xml`** | `/vendor/etc/media_codecs*.xml` & `/vendor/etc/media_profiles_V1_0.xml` | `device/xiaomi/blossom/configs/media/` | Stock vendor retains this |
-| **`xmls/power/power_profile.xml`** | `framework-res.apk` -> `res/xml/power_profile.xml` | `overlay/frameworks/base/core/res/res/xml/power_profile.xml` | Overlaid via framework-res overlay |
+| **`xmls/power/power_profile.xml`** | `framework-res.apk` -> `res/xml/power_profile.xml` | `overlay/frameworks/base/core/res/res/xml/` | Overlaid via framework-res overlay |
 | **`xmls/power/powerhint.json`** | `/vendor/etc/powerhint.json` | `device/xiaomi/blossom/configs/powerhint.json` | `/vendor/etc/powerhint.json` |
-| **`xmls/thermal/thermal_info_config.json`** | `/vendor/etc/thermal_info_config.json` | `device/xiaomi/blossom/configs/thermal/thermal_info_config.json` | `/vendor/etc/thermal_info_config.json` |
+| **`xmls/thermal/thermal_info_config.json`** | `/vendor/etc/thermal_info_config.json` | `device/xiaomi/blossom/configs/thermal/` | `/vendor/etc/thermal_info_config.json` |
 | **`port_libs_and_shims/vndk/libui-v32.so`** | `/system/lib64/vndk-v32/libui.so` | `device/xiaomi/blossom/vndk/libui-v32.so` | Handled by VNDK APEX |
 | **`port_libs_and_shims/libshims/`** | `/system/lib64/libshim_*.so` or `/vendor/lib64/` | `device/xiaomi/blossom/libshims/` | Injected into `/system/lib64/` if needed |
 | **`port_libs_and_shims/lights/`** | `/vendor/bin/hw/android.hardware.light-service.blossom` | `device/xiaomi/blossom/lights/` | Stock vendor service |
@@ -171,12 +211,7 @@ adb reboot
 ```
 
 #### Option 2: Flash via Magisk / KernelSU Module
-1. Zip the [`magisk_overlay_module/`](magisk_overlay_module/) folder:
-   ```bash
-   cd magisk_overlay_module
-   zip -r ../Blossom_Notch_Fix.zip ./*
-   ```
-2. Open **Magisk** or **KernelSU** -> Modules -> Install from storage -> Select `Blossom_Notch_Fix.zip` -> Reboot.
+Simply flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Magisk.zip) included in this repository directly in the Magisk or KernelSU app and reboot.
 
 ### C. Fixing Common GSI Bugs on MediaTek MT6762/MT6765
 - **Fix Bluetooth Audio**: Go to `Settings -> Phh Treble Settings -> Audio -> Enable "Disable Bluetooth A2DP offload"`.
