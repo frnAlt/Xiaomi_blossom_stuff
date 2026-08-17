@@ -1,80 +1,69 @@
-# Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs & Complete Porting Kit
+# Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs, and Porting Kit
 
-A complete, production-ready, **anti-brick guaranteed** repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, backend automation tools, **AI Porting Diagnostics Assistant**, **Pre-Flash Safety Guard**, **GitHub Actions Cloud Auto-Porter Workflow**, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
+A production-ready repository containing extracted and compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, backend automation tools, AI Porting Diagnostics Assistant, Pre-Flash Safety Guard, GitHub Actions Cloud Auto-Porter Workflow, and porting documentation for Xiaomi Blossom (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
 
-Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**, **DnA Android Kitchen Porters**, **AOSP / Custom ROM Developers**, and **Treble Maintainers**.
-
->  **100% Anti-Brick & Safe Architecture:** 
-> Our porting engine and flasher scripts strictly isolate and protect all bootloader (`preloader`, `lk`) and IMEI/NVRAM partitions (`nvram`, `nvdata`, `proinfo`, `tee`). Read the full **[Emergency Unbrick & Safety Manual (EMERGENCY_UNBRICK_GUIDE.md)](EMERGENCY_UNBRICK_GUIDE.md)**!
-
-> **Automate Everything on GitHub Actions:** 
-> Want to port any ROM in the cloud without downloading gigabytes of files locally? 
-> Use our **[GitHub Actions Auto-Port Workflow](#-cloud-auto-port-github-actions-workflow)**! Paste any Port ROM URL -> Click Run -> Real-time AI logs diagnostic -> Download your ready-to-flash Blossom ROM from GitHub Releases & Mirrors!
+Target platforms: Generic System Images (GSI), MIUI / HyperOS ports, DnA Android Kitchen workflows, AOSP / Custom ROM trees, and Treble environments.
 
 ---
 
-## Device Specifications & Target Models
+## Device Specifications
 
 | Parameter | Specification |
 |---|---|
-| **Codename** | `blossom` (`dandelion`, `angelica`, `angelican`, `cattail`) |
-| **Target Devices** | Xiaomi Redmi 9A, Redmi 9C, Redmi 9 Activ, Redmi 9 India, Poco C3 |
-| **Platform / SoC** | MediaTek Helio G25 / G35 (MT6762G / MT6765 / MT6765G) |
-| **Architecture** | ARM64 (`arm64-v8a`) |
-| **Display Resolution** | 720 x 1600 (HD+ 20:9 Aspect Ratio) |
-| **Display Cutout Notch** | Waterdrop Notch (`M 0,0 H -64 V 60 H 64 V 0 H 0 Z`) |
-| **Status Bar Height** | `56.0px` (Portrait), `24.0dp` (Landscape) |
-| **Rounded Corners Radius** | `33dp` |
-| **Treble Architecture** | System-as-Root (SAR), VNDK 30/31/32, Dynamic Partitions (VAB/Retrofit) |
+| Codename | `blossom` (`dandelion`, `angelica`, `angelican`, `cattail`) |
+| Target Devices | Xiaomi Redmi 9A, Redmi 9C, Redmi 9 Activ, Redmi 9 India, Poco C3 |
+| Platform / SoC | MediaTek Helio G25 / G35 (MT6762G / MT6765 / MT6765G) |
+| Architecture | ARM64 (`arm64-v8a`) |
+| Display Resolution | 720 x 1600 (HD+ 20:9 Aspect Ratio) |
+| Display Cutout Notch | Waterdrop Notch (`M 0,0 H -64 V 60 H 64 V 0 H 0 Z`) |
+| Status Bar Height | `56.0px` (Portrait), `24.0dp` (Landscape) |
+| Rounded Corners Radius | `33dp` |
+| Treble Architecture | System-as-Root (SAR), VNDK 30/31/32, Dynamic Partitions (VAB/Retrofit) |
 
 ---
 
-##  Anti-Brick & Protected Partition Architecture
+## Anti-Brick Protected Partition Architecture
 
-| Protected Partition | Function | Protection Status |
+| Protected Partition | Function | Protection Policy |
 |---|---|---|
-| **`preloader`** | Primary SoC Bootloader | **100% Protected** (Never touched / zero brick risk) |
-| **`lk` / `lk2`** | LittleKernel Fastboot Bootloader | **100% Protected** (Guarantees Fastboot access) |
-| **`nvram` / `nvdata`** | Hardware IMEI, Baseband, Wi-Fi MAC | **100% Protected** (Prevents baseband/network loss) |
-| **`tee1` / `tee2`** | TrustZone & Hardware Security | **100% Protected** |
-| **`md1img` / `md1dsp`** | Cellular Modem DSP Firmware | **100% Protected** |
+| `preloader` | Primary SoC Bootloader | Read-only / Excluded from flash targets |
+| `lk` / `lk2` | LittleKernel Fastboot Bootloader | Read-only / Preserves Fastboot recovery access |
+| `nvram` / `nvdata` | Hardware IMEI, Baseband calibration, Wi-Fi MAC | Read-only / Preserves network credentials |
+| `proinfo` / `nvcfg` | Serial number and device provisioning | Read-only |
+| `tee1` / `tee2` | TrustZone and secure OS execution | Read-only |
+| `md1img` / `md1dsp` | Cellular Modem DSP Firmware | Read-only |
+
+For full unbrick instructions, see [EMERGENCY_UNBRICK_GUIDE.md](EMERGENCY_UNBRICK_GUIDE.md).
 
 ---
 
-## Cloud Auto-Port (GitHub Actions Workflow)
+## Cloud Auto-Porter (GitHub Actions Workflow)
 
-You can automatically port any ROM directly in GitHub Cloud using our automated workflow ([`.github/workflows/auto_port.yml`](.github/workflows/auto_port.yml)):
+Automated cloud porting pipeline available at [`.github/workflows/auto_port.yml`](.github/workflows/auto_port.yml):
 
 ```mermaid
 graph LR
- A[Enter Port ROM URL in GitHub] --> B[GitHub Actions Cloud Runner]
- B --> C[Fast Multi-threaded Download aria2c]
- C --> D[Extract payload.bin / super.img]
- D --> E[Auto-Patcher: Overlays, Shims, AVB Bypass]
- E --> F[Anti-Brick Safety Guard Verification]
- F --> G[AI Assistant: Real-time Diagnostics]
- G --> H[Package Flashable ZIP + SHA256]
- H --> I[Upload to GitHub Releases & Multi-Mirrors]
+    A[Input Port ROM URL] --> B[GitHub Actions Runner]
+    B --> C[Multi-threaded Download via aria2c]
+    C --> D[Extract payload.bin / super.img]
+    D --> E[Auto-Patcher: Overlays, Shims, AVB Bypass]
+    E --> F[Anti-Brick Safety Guard Verification]
+    F --> G[AI Assistant: Diagnostics & Summary]
+    G --> H[Package Flashable ZIP + SHA256]
+    H --> I[Upload to GitHub Releases & Mirrors]
 ```
 
-### How to Run the Cloud Auto-Porter:
-1. Go to your GitHub Repository: **`https://github.com/frnAlt/Xiaomi_blossom_stuff`**
-2. Click on the **Actions** tab at the top.
-3. In the left sidebar, click **" Automatic ROM Porter for Xiaomi Blossom"**.
-4. Click the **"Run workflow"** button on the right.
-5. Fill in the input fields:
- - **Port ROM URL**: Direct download link of the target ROM (e.g. HyperOS from Redmi Note 11, PixelOS, OneUI, etc.).
- - **Base ROM URL** *(Optional)*: Direct link to stock Blossom Fastboot ROM (leave empty to use repository stock templates).
- - **Target Variant**: Select `blossom` (All models), `dandelion` (9A), `angelica` (9C), or `cattail` (9 Activ).
- - **ROM Name / Type**: Enter name (e.g. `HyperOS`, `MIUI14`, `PixelOS`).
- - **Custom Upload URL** *(Optional)*: Enter a custom server URL or `https://transfer.sh/` to upload the finished build.
-6. Click **"Run workflow"**.
-7. The workflow automatically produces:
- - **GitHub Release** with flashable ZIPs, SHA256 checksums, and flashing scripts (`flash_all.bat` / `flash_all.sh`).
- - **Anti-Brick Safety Audit Report**.
- - **AI Diagnostic Report** in the workflow summary.
- - **Multi-mirror links** (Pixeldrain, Transfer.sh, Custom endpoint).
- - **Complete build logs and diagnostics artifacts**.
+### Execution Steps
+1. Navigate to the GitHub repository: `https://github.com/frnAlt/Xiaomi_blossom_stuff`
+2. Open the **Actions** tab.
+3. Select **Automatic ROM Porter for Xiaomi Blossom**.
+4. Click **Run workflow** and provide the following parameters:
+   - `port_rom_url`: Direct download URL of the target ROM package.
+   - `base_rom_url` (Optional): Direct link to stock Blossom Fastboot ROM.
+   - `target_variant`: Select `blossom`, `dandelion`, `angelica`, or `cattail`.
+   - `rom_type`: Name or category (e.g., `HyperOS`, `MIUI14`, `PixelOS`).
+   - `custom_upload_url` (Optional): Custom HTTP server or `https://transfer.sh/` endpoint.
+5. Click **Run workflow**.
 
 ---
 
@@ -82,55 +71,97 @@ graph LR
 
 ```text
 ├── .github/workflows/
-│ └── auto_port.yml # GitHub Actions Cloud Auto-Porter Workflow (with AI Diagnostics)
+│   └── auto_port.yml                     # GitHub Actions Cloud Auto-Porter Workflow
 │
-├── tools/ #  Backend Automation & CLI Porting Suite
-│ ├── unbrick_safety_guard.py #  Anti-Brick Safety Guard & Pre-Flash Validator
-│ ├── ai_assistant.py # AI Diagnostics & Error Root-Cause Analyzer (Offline + Gemini API)
-│ ├── auto_patcher.py #  Automated Patcher (Fstab Encryption Bypass, AVB Verity, Audio)
-│ ├── auto_porter.py # End-to-End CLI Porter (Download -> Extract -> Merge -> Package)
-│ ├── port_helper.py # ROM Injection Engine (Overlays, Shims, Props, Carrier)
-│ ├── super_tools.py # Dynamic Super Partition Engine (lpmake, AVB flags, Flasher scripts)
-│ ├── multi_uploader.py # Multi-Mirror Cloud Uploader (Pixeldrain, Transfer.sh, Custom)
-│ ├── build_overlays.py # RRO Compiler & Signer (aapt + apksigner)
-│ ├── create_magisk_module.py # Flashable Magisk/KernelSU ZIP Packager
-│ └── verify_tree.py # Tree Integrity & Port Diagnostic Validator
+├── tools/                                # Backend Automation & CLI Porting Suite
+│   ├── unbrick_safety_guard.py           # Pre-Flash Safety Validator
+│   ├── ai_assistant.py                   # Porting Diagnostics & Error Root-Cause Analyzer
+│   ├── auto_patcher.py                   # Automated Hardware & Framework Patcher
+│   ├── auto_porter.py                    # End-to-End CLI Porter (Download, Extract, Merge, Package)
+│   ├── multi_uploader.py                 # Multi-Mirror Cloud Uploader
+│   ├── port_helper.py                    # ROM Injection Engine (Overlays, Shims, Props, Carrier)
+│   ├── super_tools.py                    # Dynamic Super Partition Engine (lpmake, AVB verity, Flasher)
+│   ├── build_overlays.py                 # RRO Compiler and Signer (aapt + apksigner)
+│   ├── create_magisk_module.py           # Magisk/KernelSU ZIP Packager
+│   └── verify_tree.py                    # Tree Diagnostic Validator
 │
-├── EMERGENCY_UNBRICK_GUIDE.md # Emergency Unbrick & MTKClient Recovery Manual
-├── DNA_KITCHEN_PORTING_GUIDE.md # Complete Guide for Porting with DnA Kitchen (Base -> Port)
-├── PORTING_GUIDE.md # Standalone Comprehensive Porting Manual
-├── Blossom_Notch_Fix_Magisk.zip # Ready-to-flash Magisk / KernelSU Notch Fix Module
+├── EMERGENCY_UNBRICK_GUIDE.md            # Emergency Unbrick & MTKClient Recovery Manual
+├── DNA_KITCHEN_PORTING_GUIDE.md          # DnA Kitchen Step-by-Step Manual
+├── PORTING_GUIDE.md                      # Standalone Comprehensive Porting Manual
+├── Blossom_Notch_Fix_Magisk.zip          # Flashable Magisk/KernelSU Notch Fix Module
 │
-├── apks/ # Compiled, Zipaligned, and Signed Overlay APKs
-├── extracted_display_overlay_xml/ # Decompiled & Extracted XMLs from display_overlay.apk
-├── xmls/ #  Audio, Media, Thermal, Carrier & VINTF XMLs
-├── port_libs_and_shims/ #  Essential Porting Libraries & Shims
-├── rootdir/ # Init scripts (init.mt6765.rc, init.mt6762.rc) & fstabs
-├── sepolicy/ # SELinux policies (vendor & private)
-├── props/ #  Props (system.prop, vendor.prop, product.prop, odm.prop)
-└── build_makefiles/ #  BoardConfig.mk, device.mk, patches, extract-files.sh
+├── apks/                                 # Compiled, Zipaligned, and Signed Overlay APKs
+│   ├── FrameworksResOverlayBlossom.apk   # Framework Overlay (Notch, Brightness, Doze, Power)
+│   ├── DisplayOverlayBlossom.apk         # Display Cutout and Statusbar Overlay
+│   ├── display_overlay.apk               # Drop-in binary display overlay
+│   ├── SystemUIOverlayBlossom.apk        # SystemUI paddings and icon offsets
+│   ├── SettingsOverlayBlossom.apk        # Settings UI customizations
+│   ├── CarrierConfigOverlayBlossom.apk   # VoLTE / IMS Carrier configurations
+│   ├── WifiResOverlayBlossom.apk         # Wi-Fi 2.4/5GHz channel resources
+│   ├── DialerOverlayBlossom.apk          # Dialer and in-call UI overlays
+│   ├── TelephonyOverlayBlossom.apk       # Telephony stack overlays
+│   ├── LauncherOverlayBlossom.apk        # Launcher grid and icon configs
+│   ├── treble_gsi/                       # Treble GSI Specific Overlays
+│   │   └── treble-overlay-xiaomi-blossom.apk
+│   └── vendor_overlay_prebuilts/         # Standard /vendor/overlay/ prebuilts
+│
+├── extracted_display_overlay_xml/        # Decompiled XML resources from display_overlay.apk
+│   ├── AndroidManifest.xml               # Target package declaration and priority
+│   ├── display_cutout_notch.xml          # Cutout SVG Path, Statusbar, and Corner Radii
+│   ├── display_dimens.xml                # Dimension resources
+│   ├── display_strings.xml               # String definitions
+│   ├── display_bools.xml                 # Boolean configurations
+│   ├── brightness_arrays.xml             # Lux/nits auto-brightness spline calibration
+│   ├── power_profile.xml                 # Battery consumption specifications
+│   ├── display_overlay_decompiled/       # Full decompiled apktool tree
+│   ├── frameworks_overlay_decompiled/    # Full decompiled FrameworksRes overlay tree
+│   └── treble_gsi_overlay_decompiled/    # Full decompiled Treble GSI overlay tree
+│
+├── xmls/                                 # Categorized XML and JSON configurations
+│   ├── display/                          # Cutout SVG paths and brightness curves
+│   ├── systemui/                         # Status bar dimensions and margins
+│   ├── settings/                         # Settings layout and features
+│   ├── power/                            # power_profile.xml, powerhint.json, task_profiles.json
+│   ├── audio/                            # audio_policy_configuration.xml, aurisys, effects
+│   ├── media/                            # media_codecs.xml, c2, profiles, performance
+│   ├── thermal/                          # thermal_info_config.json
+│   ├── carrier/                          # vendor.xml, vendor_device.xml, vendor_miui.xml
+│   ├── permissions/                      # MediaTek framework and privapp permissions
+│   └── vintf_manifests/                  # manifest.xml, compatibility matrices, lights
+│
+├── rro_overlays/                         # Source RRO overlays with Android.bp & AndroidManifest.xml
+├── device_tree_overlay/                  # Traditional AOSP overlay structure
+├── port_libs_and_shims/                  # Porting libraries and shims
+│   ├── vndk/                             # libui-v32.so, android.hardware.*-ndk_platform.so
+│   ├── libshims/                         # libshim_ui, libshim_vtservice, libshim_beanpod, libshim_audio
+│   ├── lights/                           # Lights HAL C++ source and service XML
+│   ├── audio/                            # Audio service init rc and makefiles
+│   ├── init/                             # init_blossom.cpp (Variant detection: dandelion vs angelica)
+│   └── public.libraries.vendor.txt
+├── rootdir/                              # Init scripts (init.mt6765.rc, init.mt6762.rc) and fstabs
+├── sepolicy/                             # SELinux vendor and private policies
+├── props/                                # Props (system.prop, vendor.prop, product.prop, odm.prop)
+└── build_makefiles/                      # BoardConfig.mk, device.mk, patches, extract-files.sh
 ```
 
 ---
 
-##  Backend Automation CLI Tools
-
-Run all porting, patching, safety audit, AI diagnostic, and packaging tasks locally:
+## Backend Automation CLI Tools
 
 ### 1. Pre-Flash Anti-Brick Safety Guard (`tools/unbrick_safety_guard.py`)
-Scans any ROM package or script to ensure no dangerous bootloader or IMEI partitions are targeted:
+Scans any ROM package or script to ensure no protected bootloader or NVRAM partitions are targeted:
 ```bash
 python3 tools/unbrick_safety_guard.py --rom-zip Blossom_Port_HyperOS_dandelion.zip
 ```
 
 ### 2. AI Porting Assistant & Diagnostic Engine (`tools/ai_assistant.py`)
-Analyzes build logs, extraction errors, or bootloop logcats and outputs exact root causes and fixes:
+Analyzes build logs, extraction errors, or bootloop logcats and outputs root causes and fixes:
 ```bash
 python3 tools/ai_assistant.py --log-file /path/to/bootlog_or_build.log
 ```
 
 ### 3. Automated Hardware & Framework Patcher (`tools/auto_patcher.py`)
-Bypasses forced encryption in fstabs, disables dm-verity panics, and configures MediaTek shims:
+Disables forced encryption in fstabs, strips dm-verity panics, and configures MediaTek shims:
 ```bash
 python3 tools/auto_patcher.py --port-dir /path/to/extracted_port_rom
 ```
@@ -139,9 +170,9 @@ python3 tools/auto_patcher.py --port-dir /path/to/extracted_port_rom
 Downloads, unpacks `payload.bin`/`super.img`, merges Base + Port partitions, injects fixes, and packages a flashable ZIP:
 ```bash
 python3 tools/auto_porter.py \
- --port-url "https://example.com/hyperos_port.zip" \
- --variant dandelion \
- --rom-type HyperOS
+  --port-url "https://example.com/hyperos_port.zip" \
+  --variant dandelion \
+  --rom-type HyperOS
 ```
 
 ### 5. Dynamic Super Partition & Flasher Generator (`tools/super_tools.py`)
@@ -158,7 +189,7 @@ python3 tools/multi_uploader.py --file Blossom_Port_HyperOS_dandelion.zip
 
 ---
 
-##  Master File-to-Destination Mapping Table
+## Master File-to-Destination Mapping Table
 
 | Source File / Folder in this Repository | Destination in MIUI / HyperOS Port | Destination in AOSP / Custom ROM Tree | Destination in Treble GSI |
 |---|---|---|---|
@@ -184,38 +215,38 @@ python3 tools/multi_uploader.py --file Blossom_Port_HyperOS_dandelion.zip
 
 ---
 
-## Complete Treble GSI Porting & Usage Guide
+## Treble GSI Porting & Installation
 
-If you are running or installing a **Generic System Image (GSI)** (such as Phh AOSP, PixelExperience GSI, crDroid GSI, LineageOS GSI, EvolutionX GSI, etc.) on Xiaomi Blossom:
+When installing a Generic System Image (ARM64 A/B):
 
-### A. Flashing a GSI via Fastboot
-1. Download an **`arm64_bvN`** or **`arm64_bgN`** (ARM64 A/B) GSI image.
-2. Reboot phone to FastbootD mode:
- ```bash
- adb reboot fastboot
- ```
-3. Flash the GSI system image:
- ```bash
- fastboot erase system
- fastboot flash system <gsi_image_name>.img
- fastboot -w
- fastboot reboot
- ```
+### Fastboot Flash Procedure
+1. Obtain an `arm64_bvN` or `arm64_bgN` GSI image.
+2. Reboot into FastbootD:
+   ```bash
+   adb reboot fastboot
+   ```
+3. Flash the system image and wipe:
+   ```bash
+   fastboot erase system
+   fastboot flash system <gsi_image_name>.img
+   fastboot -w
+   fastboot reboot
+   ```
 
-### B. Installing the Notch & Display Overlay Fix on GSI
-Simply flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Magisk.zip) directly in the Magisk or KernelSU app and reboot!
+### GSI Notch and Display Cutout Configuration
+Flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Magisk.zip) through Magisk or KernelSU to apply status bar and display cutout alignment.
 
 ---
 
-## Troubleshooting Common Blossom Porting Bugs
+## Troubleshooting Guide
 
-| Symptom / Bug | Root Cause | Fix / Solution |
+| Issue | Root Cause | Resolution |
 |---|---|---|
-| **Status bar icons overlap under notch** | Missing `config_mainBuiltInDisplayCutout` or wrong statusbar height. | Install `DisplayOverlayBlossom.apk` or inject SVG path `M 0,0 H -64 V 60 H 64 V 0 H 0 Z` and set status bar height to `56px`. |
-| **Brightness slider has no effect or jumps** | Missing lux-to-nits spline interpolation arrays on MTK panel. | Apply [`extracted_display_overlay_xml/brightness_arrays.xml`](extracted_display_overlay_xml/brightness_arrays.xml) into framework-res. |
-| **Camera app crashes on launch** | Missing `GraphicBufferMapper` symbol in MTK camera HAL. | Add `port_libs_and_shims/libshims/libshim_ui` to the build or vendor libs. |
-| **No In-Call Audio / Bluetooth Headset Audio** | MTK Aurisys DSP parameter mismatch. | Use `xmls/audio/aurisys_config.xml` and `xmls/audio/audio_policy_configuration.xml`. |
-| **Fingerprint settings missing or crashing on 9A** | Redmi 9A (`dandelion`) lacks fingerprint hardware; ROM tried loading biometric HAL. | Use `port_libs_and_shims/init/init_blossom.cpp` to dynamically disable fingerprint props on `dandelion`. |
+| Status bar icons overlap under notch | Missing `config_mainBuiltInDisplayCutout` or incorrect status bar height. | Install `DisplayOverlayBlossom.apk` or inject SVG path `M 0,0 H -64 V 60 H 64 V 0 H 0 Z` and set height to `56px`. |
+| Brightness slider non-linear or unresponsive | Missing lux-to-nits spline interpolation arrays on MTK panel. | Apply [`extracted_display_overlay_xml/brightness_arrays.xml`](extracted_display_overlay_xml/brightness_arrays.xml) to framework-res. |
+| Camera service termination on launch | Missing `GraphicBufferMapper` symbol in MediaTek camera HAL. | Add `port_libs_and_shims/libshims/libshim_ui` to the build or vendor libraries. |
+| In-call audio / Bluetooth headset failure | MediaTek Aurisys DSP parameter mismatch. | Use `xmls/audio/aurisys_config.xml` and `xmls/audio/audio_policy_configuration.xml`. |
+| Fingerprint settings crashing on Redmi 9A | Redmi 9A (`dandelion`) lacks fingerprint hardware. | Use `port_libs_and_shims/init/init_blossom.cpp` to dynamically disable fingerprint props on `dandelion`. |
 
 ---
 
@@ -225,18 +256,17 @@ Simply flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Mag
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Waterdrop Notch Path for Xiaomi Redmi 9A / 9C / 9 Activ -->
 <resources>
- <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
- <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
- <dimen name="status_bar_height_default">56.0px</dimen>
- <dimen name="status_bar_height_portrait">56.0px</dimen>
- <dimen name="status_bar_height_landscape">24.0dp</dimen>
- <dimen name="rounded_corner_radius">33dp</dimen>
+    <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
+    <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
+    <dimen name="status_bar_height_default">56.0px</dimen>
+    <dimen name="status_bar_height_portrait">56.0px</dimen>
+    <dimen name="status_bar_height_landscape">24.0dp</dimen>
+    <dimen name="rounded_corner_radius">33dp</dimen>
 </resources>
 ```
 
 ---
 
-## License & Credits
-- Xiaomi Blossom Device Tree maintained by [crDroid Android](https://github.com/crdroidandroid) & [LineageOS](https://github.com/LineageOS).
-- DnA Android Kitchen by the DnA Developer Team.
+## License
+- Xiaomi Blossom Device Tree maintained by crDroid Android and LineageOS.
 - Apache 2.0 License.
