@@ -1,0 +1,180 @@
+name: Firmware Dumper and Partition Extractor
+
+on:
+  workflow_dispatch:
+    inputs:
+      firmware_url:
+        description: "Direct URL of Firmware Package to Dump"
+        required: true
+        type: string
+      firmware_name:
+        description: "Dump Name / Tag (e.g. Blossom-MIUI12.5-Global, HyperOS-Port-Base)"
+        required: true
+        type: string
+        default: "Firmware-Dump"
+      push_to_branch:
+        description: "Push Extracted Tree to a Dedicated Git Branch?"
+        required: true
+        type: boolean
+        default: false
+      upload_release:
+        description: "Upload Compressed Dump Archive to GitHub Releases?"
+        required: true
+        type: boolean
+        default: true
+      custom_upload_url:
+        description: "Custom Upload URL (Optional: e.g. https://transfer.sh/)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  dump-firmware:
+    name: Dump Firmware (${{ inputs.firmware_name }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Maximize runner disk space
+        run: |
+          echo "Freeing disk space on runner..."
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
+          sudo docker image prune --all --force 2>/dev/null || true
+          df -h
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install extraction dependencies and partition utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 p7zip-full zstd brotli liblz4-tool \
+            e2fsprogs simg2img curl wget
+
+          # Install payload-dumper-go
+          PAYLOAD_URL="https://github.com/ssut/payload-dumper-go/releases/download/1.2.2/payload-dumper-go_1.2.2_linux_amd64.tar.gz"
+          wget -qO- "$PAYLOAD_URL" | sudo tar -xz -C /usr/local/bin payload-dumper-go
+          sudo chmod +x /usr/local/bin/payload-dumper-go
+
+          # Install lpmake and lpunpack
+          wget -qO /tmp/lpmake.zip "https://github.com/carlitoxxpro/lpmake/releases/download/v1.0/lpmake-x86_64.zip" || true
+          if [ -f /tmp/lpmake.zip ]; then
+            sudo unzip -o /tmp/lpmake.zip -d /usr/local/bin/ || true
+            sudo chmod +x /usr/local/bin/lpmake /usr/local/bin/lpunpack 2>/dev/null || true
+          fi
+
+          echo "Extractor environment setup completed."
+
+      - name: Run heavy-duty firmware dumper pipeline
+        id: run_dumper
+        run: |
+          WORK_DIR="/tmp/dumper_work"
+          OUT_DIR="/tmp/dumper_output"
+          mkdir -p "$WORK_DIR" "$OUT_DIR"
+
+          python3 tools/rom_dumper.py \
+            --url "${{ inputs.firmware_url }}" \
+            --work-dir "$WORK_DIR" \
+            --out-dir "$OUT_DIR" \
+            --package-name "${{ inputs.firmware_name }}"
+
+          DUMP_ARCHIVE=$(ls $WORK_DIR/${{ inputs.firmware_name }}.* | head -n 1)
+          echo "DUMP_ARCHIVE=$DUMP_ARCHIVE" >> $GITHUB_ENV
+          echo "DUMP_FILENAME=$(basename $DUMP_ARCHIVE)" >> $GITHUB_ENV
+          echo "OUT_DIR=$OUT_DIR" >> $GITHUB_ENV
+
+      - name: Generate summary report
+        run: |
+          MANIFEST="$OUT_DIR/dump_manifest.json"
+          PROPS="$OUT_DIR/device_configs/all_build_props.prop"
+
+          echo "## Firmware Dump Report: ${{ inputs.firmware_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source URL:** ${{ inputs.firmware_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dump Package:** \`${{ env.DUMP_FILENAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "$MANIFEST" ]; then
+            echo "### Extracted Partitions and Checksums" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat "$MANIFEST" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload dump to mirrors (Pixeldrain, Transfer.sh, Custom)
+        if: success()
+        run: |
+          CUSTOM_ARG=""
+          if [ -n "${{ inputs.custom_upload_url }}" ]; then
+            CUSTOM_ARG="--custom-url '${{ inputs.custom_upload_url }}'"
+          fi
+
+          python3 tools/multi_uploader.py \
+            --file "${{ env.DUMP_ARCHIVE }}" \
+            $CUSTOM_ARG \
+            --output-md /tmp/dumper_work/mirrors_summary.md || true
+
+          if [ -f "/tmp/dumper_work/mirrors_summary.md" ]; then
+            echo -e "\n" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/dumper_work/mirrors_summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Push extracted tree to git branch (Optional)
+        if: success() && inputs.push_to_branch == true
+        run: |
+          BRANCH_NAME="dump/${{ inputs.firmware_name }}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create orphan branch
+          git checkout --orphan "$BRANCH_NAME"
+          git rm -rf . || true
+
+          # Copy dumped configs and properties
+          cp -r $OUT_DIR/device_configs ./ || true
+          cp $OUT_DIR/dump_manifest.json ./ || true
+
+          git add .
+          git commit -m "dump: Extract ${{ inputs.firmware_name }} partitions and properties"
+          git push origin "$BRANCH_NAME" --force
+
+      - name: Upload dump archive as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.firmware_name }}
+          path: ${{ env.DUMP_ARCHIVE }}
+          retention-days: 7
+
+      - name: Create GitHub release and upload dump archive
+        if: success() && inputs.upload_release == true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "dump-${{ inputs.firmware_name }}-${{ github.run_number }}"
+          name: "Firmware Dump: ${{ inputs.firmware_name }}"
+          body: |
+            ## Firmware Dump Information
+
+            - Firmware Name: `${{ inputs.firmware_name }}`
+            - Source URL: `${{ inputs.firmware_url }}`
+            - Build Number: `#${{ github.run_number }}`
+            - Commit: `${{ github.sha }}`
+
+            ### Included Contents
+            - Raw dynamic and physical partition images (`system`, `vendor`, `product`, `boot`, `dtbo`, `vbmeta`)
+            - Consolidated device properties (`all_build_props.prop`)
+            - Extraction manifest with SHA256 checksums (`dump_manifest.json`)
+          files: |
+            ${{ env.DUMP_ARCHIVE }}
+            ${{ env.OUT_DIR }}/dump_manifest.json
+            ${{ env.OUT_DIR }}/device_configs/all_build_props.prop
+          draft: false
+          prerelease: false
