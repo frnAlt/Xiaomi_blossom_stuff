@@ -4,6 +4,9 @@ Complete extracted & compiled display overlays, decompiled XML trees, vendor lib
 
 Designed for **Custom ROM developers**, **GSI (Generic System Image) builders**, and **Treble maintainers**.
 
+> 📖 **Looking for step-by-step instructions on how to port MIUI / HyperOS, build AOSP ROMs, or fix Treble GSIs?**  
+> Check out the complete **[PORTING GUIDE (PORTING_GUIDE.md)](PORTING_GUIDE.md)** for file-to-destination mapping tables, installation steps, and bug fixes!
+
 ---
 
 ## 📱 Device Specifications & Target Models
@@ -23,6 +26,7 @@ Designed for **Custom ROM developers**, **GSI (Generic System Image) builders**,
 ## 📁 Repository Structure
 
 ```text
+├── PORTING_GUIDE.md                      # 📖 Comprehensive Porting Guide (MIUI, HyperOS, AOSP, Treble GSI)
 ├── apks/                                 # Compiled, Zipaligned, and Signed APKs
 │   ├── FrameworksResOverlayBlossom.apk   # Full framework-res overlay (Cutout, Brightness, Doze, Power)
 │   ├── DisplayOverlayBlossom.apk         # Dedicated Display Cutout & Statusbar overlay
@@ -119,18 +123,11 @@ Auto-brightness lux and nits mappings for smooth backlight transitions without s
 
 ---
 
-## 🚀 How to Use for ROM Porting & Treble GSIs
+## 🚀 Quick Start for Porting (See [PORTING_GUIDE.md](PORTING_GUIDE.md) for Full Details)
 
-### Option 1: Using on Treble GSIs (Phh / AOSP / PixelExperience GSI)
-1. Push `apks/treble_gsi/treble-overlay-xiaomi-blossom.apk` or `apks/DisplayOverlayBlossom.apk` to `/system/product/overlay/` or `/product/overlay/` with permissions `0644`.
-2. Or flash the pre-configured `magisk_overlay_module` via Magisk / KernelSU / APatch.
-
-### Option 2: Using in Custom ROM Device Trees (AOSP / LineageOS / crDroid)
-- **Soong RRO Overlays**: Copy `rro_overlays/` directly into your device tree root and reference `PRODUCT_PACKAGES += FrameworksResOverlayBlossom SystemUIOverlayBlossom SettingsOverlayBlossom CarrierConfigOverlayBlossom WifiResOverlayBlossom TelephonyOverlayBlossom` in `device.mk`.
-- **Traditional Overlay**: Set `DEVICE_PACKAGE_OVERLAYS += $(DEVICE_PATH)/device_tree_overlay` in `device.mk`.
-
-### Option 3: MediaTek Shims & VNDK Fixes
-- Copy `port_libs_and_shims/libshims` and `port_libs_and_shims/vndk` into your device tree or vendor tree to resolve `libui-v32.so` and `GraphicBufferMapper` symbol incompatibilities on Android 12 through Android 16.
+- **For MIUI / HyperOS Ports**: Push `apks/DisplayOverlayBlossom.apk` to `/system_ext/overlay/` or `/product/overlay/`, and set `ro.miui.notch=1` in `build.prop`.
+- **For AOSP / Custom ROM Trees**: Place `rro_overlays/` in your device tree root and add `PRODUCT_PACKAGES += FrameworksResOverlayBlossom SystemUIOverlayBlossom` to `device.mk`.
+- **For Treble GSIs**: Push `apks/treble_gsi/treble-overlay-xiaomi-blossom.apk` to `/system/product/overlay/` or flash [`magisk_overlay_module/`](magisk_overlay_module/) in Magisk / KernelSU.
 
 ---
 
