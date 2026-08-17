@@ -1,8 +1,12 @@
-# Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs & Complete Porting Guide
+# Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs & Complete Porting Kit
 
 A complete, production-ready repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
 
-Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**, **AOSP / Custom ROM Developers**, and **Treble Maintainers**.
+Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**, **DnA Android Kitchen Porters**, **AOSP / Custom ROM Developers**, and **Treble Maintainers**.
+
+> 📖 **Quick Links to Guides:**  
+> - **[DnA Android Kitchen Porting Guide (DNA_KITCHEN_PORTING_GUIDE.md)](DNA_KITCHEN_PORTING_GUIDE.md)**: Full guide on unpacking, merging Base + Port ROMs, and repacking flashable zip / super.img!  
+> - **[General Porting Guide (PORTING_GUIDE.md)](PORTING_GUIDE.md)**: File-to-destination mapping tables, AOSP tree setup, and bug fixes!
 
 ---
 
@@ -25,6 +29,7 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 ## 📁 Repository Structure
 
 ```text
+├── DNA_KITCHEN_PORTING_GUIDE.md          # 🍳 Complete Guide for Porting with DnA Kitchen (Base -> Port)
 ├── PORTING_GUIDE.md                      # 📖 Standalone Comprehensive Porting Manual
 ├── apks/                                 # 📦 Compiled, Zipaligned, and Signed Overlay APKs
 │   ├── FrameworksResOverlayBlossom.apk   # Full framework overlay (Notch, Brightness, Doze, Power)
@@ -89,6 +94,26 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 
 ---
 
+## 🍳 Quick Summary: Using DnA Android Kitchen to Port ROMs to Blossom
+
+See **[DNA_KITCHEN_PORTING_GUIDE.md](DNA_KITCHEN_PORTING_GUIDE.md)** for full details.
+
+1. **Base vs Port Setup**:
+   - **Base ROM**: Stock Blossom Fastboot ROM (`dandelion` or `angelica` MIUI 12.5).
+   - **Port ROM**: Target ROM firmware (HyperOS, MIUI 14, PixelOS, OneUI, OxygenOS from MediaTek donor).
+2. **Partition Replacement Strategy**:
+   - Keep **100% BASE**: `boot.img` (Kernel), `dtbo.img`, and `vendor/` (HALs/Drivers).
+   - Take **PORT ROM**: `system/`, `product/`, `system_ext/`.
+3. **Inject Blossom Fixes into Port ROM**:
+   - Place `apks/DisplayOverlayBlossom.apk` into `system/product/overlay/`.
+   - Place `apks/FrameworksResOverlayBlossom.apk` into `vendor/overlay/`.
+   - Add `port_libs_and_shims/libshims/libshim_ui` and `port_libs_and_shims/vndk/libui-v32.so` for graphics/camera stability.
+   - Set device props in `build.prop`: `ro.product.device=blossom`, `ro.miui.notch=1`, `ro.miui.has_real_notch=1`.
+4. **Repack & Flash**:
+   - Repack `super.img` or flashable zip in DnA Kitchen and flash via FastbootD / TWRP.
+
+---
+
 ## 🗺️ Master File-to-Destination Mapping Table
 
 | Source File / Folder in this Repository | Destination in MIUI / HyperOS Port | Destination in AOSP / Custom ROM Tree | Destination in Treble GSI |
@@ -99,7 +124,7 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 | **`apks/CarrierConfigOverlayBlossom.apk`** | `/vendor/overlay/CarrierConfigOverlayBlossom.apk` | `PRODUCT_PACKAGES += CarrierConfigOverlayBlossom` | `/vendor/overlay/CarrierConfigOverlayBlossom.apk` |
 | **`apks/treble_gsi/treble-overlay-xiaomi-blossom.apk`** | N/A | N/A | `/system/product/overlay/treble-overlay-xiaomi-blossom.apk` |
 | **`extracted_display_overlay_xml/display_cutout_notch.xml`** | Decompile `framework-res.apk` -> Inject into `res/values/config.xml` & `dimens.xml` | `overlay/frameworks/base/core/res/res/values/config.xml` | Overlaid via GSI overlay APK |
-| **`xmls/carrier/vendor_miui.xml`** | `/vendor/etc/carrier/vendor_miui.xml` | `rro_overlays/CarrierConfigOverlayBlossom/res/xml/vendor_miui.xml` | `/vendor/etc/carrier/vendor_miui.xml` |
+| **`xmls/carrier/vendor_miui.xml`** | `/vendor/etc/carrier/vendor_miui.xml` | `rro_overlays/CarrierConfigOverlayBlossom/res/xml/` | `/vendor/etc/carrier/vendor_miui.xml` |
 | **`xmls/audio/*.xml`** | `/vendor/etc/audio/` & `/vendor/etc/audio_policy_configuration.xml` | `device/xiaomi/blossom/configs/audio/` | Stock vendor retains this |
 | **`xmls/media/*.xml`** | `/vendor/etc/media_codecs*.xml` & `/vendor/etc/media_profiles_V1_0.xml` | `device/xiaomi/blossom/configs/media/` | Stock vendor retains this |
 | **`xmls/power/power_profile.xml`** | `framework-res.apk` -> `res/xml/power_profile.xml` | `overlay/frameworks/base/core/res/res/xml/power_profile.xml` | Overlaid via framework-res overlay |
@@ -115,7 +140,7 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 
 ---
 
-## ⚡ 1. Complete Treble GSI Porting & Usage Guide
+## ⚡ Complete Treble GSI Porting & Usage Guide
 
 If you are running or installing a **Generic System Image (GSI)** (such as Phh AOSP, PixelExperience GSI, crDroid GSI, LineageOS GSI, EvolutionX GSI, etc.) on Xiaomi Blossom:
 
@@ -124,7 +149,6 @@ If you are running or installing a **Generic System Image (GSI)** (such as Phh A
 2. Reboot phone to FastbootD mode:
    ```bash
    adb reboot fastboot
-   # Or from bootloader: fastboot reboot fastboot
    ```
 3. Flash the GSI system image:
    ```bash
@@ -161,7 +185,7 @@ adb reboot
 
 ---
 
-## 📱 2. Complete MIUI & HyperOS Porting Guide
+## 📱 Complete MIUI & HyperOS Porting Guide
 
 When porting a MIUI (MIUI 12.5 / 13 / 14) or Xiaomi HyperOS ROM from another device (like Redmi 9, Redmi Note 9, Redmi 10) to Blossom:
 
@@ -193,7 +217,7 @@ If camera, video playback, or SurfaceFlinger crash on newer bases due to missing
 
 ---
 
-## 🛠️ 3. Complete AOSP / Custom ROM Source Porting Guide
+## 🛠️ Complete AOSP / Custom ROM Source Porting Guide
 
 To port LineageOS, crDroid, PixelOS, DerpFest, CherishOS, or EvolutionX from source:
 
@@ -270,4 +294,5 @@ The file `port_libs_and_shims/init/init_blossom.cpp` dynamically identifies hard
 
 ## 📄 License & Credits
 - Xiaomi Blossom Device Tree maintained by [crDroid Android](https://github.com/crdroidandroid) & [LineageOS](https://github.com/LineageOS).
+- DnA Android Kitchen by the DnA Developer Team.
 - Apache 2.0 License.
