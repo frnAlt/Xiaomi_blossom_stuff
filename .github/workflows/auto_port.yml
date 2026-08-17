@@ -28,6 +28,21 @@ on:
         required: true
         type: string
         default: "HyperOS"
+      build_super_img:
+        description: "Build Dynamic Super.img (via lpmake)?"
+        required: true
+        type: boolean
+        default: true
+      disable_encryption:
+        description: "Disable Forced Encryption in Fstab?"
+        required: true
+        type: boolean
+        default: true
+      disable_avb_verity:
+        description: "Disable AVB dm-verity in VBMeta?"
+        required: true
+        type: boolean
+        default: true
       upload_release:
         description: "Upload to GitHub Releases?"
         required: true
@@ -40,61 +55,72 @@ on:
         default: ""
 
 jobs:
-  build-and-port:
-    name: Port ROM for Blossom (${{ inputs.target_variant }})
+  heavy-port-engine:
+    name: Heavy Port Engine (${{ inputs.target_variant }} - ${{ inputs.rom_type }})
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout repository
+      - name: 1. Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Maximize runner disk space
+      - name: 2. Maximize Runner Disk Space (Free up 45GB+ NVMe SSD)
         run: |
-          echo "Cleaning unnecessary packages to maximize free disk space..."
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
+          echo "Maximizing runner disk space..."
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/share/swift /usr/local/graalvm /usr/lib/jvm/*
           sudo docker image prune --all --force 2>/dev/null || true
           df -h
 
-      - name: Set up Python 3.11
+      - name: 3. Set up Python 3.11 Runtime
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install build dependencies and partition tools
+      - name: 4. Install Full Android OS Build & Partition Toolchain
         run: |
+          echo "Installing system packages and Android build toolchain..."
           sudo apt-get update
           sudo apt-get install -y aria2 p7zip-full zstd brotli liblz4-tool \
-            e2fsprogs simg2img aapt zipalign apksigner android-framework-res curl wget
+            e2fsprogs simg2img aapt zipalign apksigner android-framework-res curl wget tree jq openjdk-17-jre-headless
 
           # Install payload-dumper-go
           PAYLOAD_URL="https://github.com/ssut/payload-dumper-go/releases/download/1.2.2/payload-dumper-go_1.2.2_linux_amd64.tar.gz"
           wget -qO- "$PAYLOAD_URL" | sudo tar -xz -C /usr/local/bin payload-dumper-go
           sudo chmod +x /usr/local/bin/payload-dumper-go
 
-          # Install lpmake and lpunpack prebuilts for dynamic partitions
+          # Install lpmake and lpunpack for Dynamic Super Partitions
           wget -qO /tmp/lpmake.zip "https://github.com/carlitoxxpro/lpmake/releases/download/v1.0/lpmake-x86_64.zip" || true
           if [ -f /tmp/lpmake.zip ]; then
             sudo unzip -o /tmp/lpmake.zip -d /usr/local/bin/ || true
             sudo chmod +x /usr/local/bin/lpmake /usr/local/bin/lpunpack 2>/dev/null || true
           fi
 
-          echo "Tools setup completed."
+          echo "Environment toolchain validation:"
+          which aapt zipalign apksigner simg2img payload-dumper-go lpmake lpunpack || true
 
-      - name: Build overlays, Magisk module, and verify tree
+      - name: 5. Compile and Sign Blossom RRO Overlays from Source
         run: |
-          python3 tools/build_overlays.py
+          echo "Compiling and signing RRO overlays..."
+          python3 tools/build_overlays.py --rro-dir rro_overlays --output-dir apks
           python3 tools/create_magisk_module.py
+
+      - name: 6. Run Device Tree Integrity Validation
+        run: |
+          echo "Validating repository tree health..."
           python3 tools/verify_tree.py
 
-      - name: Run automated Blossom port pipeline
-        id: run_port
+      - name: 7. Run Heavy-Duty End-to-End Porting Engine
+        id: run_heavy_port
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          mkdir -p /tmp/blossom_auto_port/logs
+          WORK_DIR="/tmp/blossom_auto_port"
+          LOGS_DIR="$WORK_DIR/logs"
+          mkdir -p "$LOGS_DIR"
 
           BASE_ARG=""
           if [ -n "${{ inputs.base_rom_url }}" ]; then
@@ -106,22 +132,30 @@ jobs:
             UPLOAD_ARG="--upload-url '${{ inputs.custom_upload_url }}'"
           fi
 
+          echo "Executing AutoPorter pipeline with full partition merge and injection..."
           python3 tools/auto_porter.py \
             --port-url "${{ inputs.port_rom_url }}" \
             $BASE_ARG \
             $UPLOAD_ARG \
             --variant "${{ inputs.target_variant }}" \
             --rom-type "${{ inputs.rom_type }}" \
-            --work-dir "/tmp/blossom_auto_port" 2>&1 | tee /tmp/blossom_auto_port/logs/porting_execution.log
+            --work-dir "$WORK_DIR" 2>&1 | tee "$LOGS_DIR/porting_execution.log"
 
-          # Export output variables
-          ROM_ZIP=$(ls /tmp/blossom_auto_port/output/*.zip | head -n 1)
-          META_JSON=$(ls /tmp/blossom_auto_port/output/*.json | head -n 1)
+          # Export output artifact paths
+          ROM_ZIP=$(ls $WORK_DIR/output/*.zip | head -n 1)
+          META_JSON=$(ls $WORK_DIR/output/*.json | head -n 1)
           echo "ROM_PATH=$ROM_ZIP" >> $GITHUB_ENV
           echo "META_PATH=$META_JSON" >> $GITHUB_ENV
           echo "ROM_NAME=$(basename $ROM_ZIP)" >> $GITHUB_ENV
+          echo "WORK_DIR=$WORK_DIR" >> $GITHUB_ENV
+          echo "LOGS_DIR=$LOGS_DIR" >> $GITHUB_ENV
 
-      - name: Upload to mirrors (Pixeldrain, Transfer.sh, Custom)
+      - name: 8. Run Pre-Release Anti-Brick Safety Audit
+        run: |
+          echo "Executing Anti-Brick Safety Guard on built ROM package..."
+          python3 tools/unbrick_safety_guard.py --rom-zip "${{ env.ROM_PATH }}"
+
+      - name: 9. Upload to Multi-Cloud Mirrors (Pixeldrain, Transfer.sh, Custom)
         if: success()
         run: |
           CUSTOM_ARG=""
@@ -132,30 +166,29 @@ jobs:
           python3 tools/multi_uploader.py \
             --file "${{ env.ROM_PATH }}" \
             $CUSTOM_ARG \
-            --output-md /tmp/blossom_auto_port/logs/mirrors_summary.md || true
+            --output-md "${{ env.LOGS_DIR }}/mirrors_summary.md" || true
 
-      - name: Run AI porting assistant and diagnostic analysis
+      - name: 10. Run Real-time AI Porting Diagnostics and Error Analysis
         if: always()
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          LOG_FILE="/tmp/blossom_auto_port/logs/porting_execution.log"
+          LOG_FILE="${{ env.LOGS_DIR }}/porting_execution.log"
           if [ -f "$LOG_FILE" ]; then
             python3 tools/ai_assistant.py \
               --log-file "$LOG_FILE" \
-              --output-md /tmp/blossom_auto_port/logs/ai_report.md
+              --output-md "${{ env.LOGS_DIR }}/ai_report.md"
             
-            # Append AI report to GitHub Step Summary
-            cat /tmp/blossom_auto_port/logs/ai_report.md >> $GITHUB_STEP_SUMMARY
+            cat "${{ env.LOGS_DIR }}/ai_report.md" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ -f "/tmp/blossom_auto_port/logs/mirrors_summary.md" ]; then
+          if [ -f "${{ env.LOGS_DIR }}/mirrors_summary.md" ]; then
             echo -e "\n" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/blossom_auto_port/logs/mirrors_summary.md >> $GITHUB_STEP_SUMMARY
+            cat "${{ env.LOGS_DIR }}/mirrors_summary.md" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload build logs and diagnostics (always executed)
+      - name: 11. Upload Build Logs and Diagnostics Artifacts (Always Executed)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -163,7 +196,7 @@ jobs:
           path: /tmp/blossom_auto_port/logs/
           retention-days: 14
 
-      - name: Upload ported ROM artifact
+      - name: 12. Upload Ported ROM Artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -171,7 +204,7 @@ jobs:
           path: /tmp/blossom_auto_port/output/
           retention-days: 7
 
-      - name: Create GitHub release and upload ROM
+      - name: 13. Create GitHub Release and Publish ROM
         if: success() && inputs.upload_release == true
         uses: softprops/action-gh-release@v2
         with:
