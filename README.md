@@ -134,23 +134,6 @@ Auto-brightness lux and nits mappings for smooth backlight transitions without s
 
 ---
 
-## 📤 Pushing to Your GitHub Repository
-
-```bash
-cd /home/ffjisan804/blossom_overlays_and_configs
-
-# Stage all files including extracted XMLs
-git add .
-
-# Create commit
-git commit -m "blossom: Add extracted XMLs from display_overlay.apk and update documentation"
-
-# Push to GitHub
-git push origin main
-```
-
----
-
 ## 📄 License & Credits
 - Xiaomi Blossom Device Tree maintained by [crDroid Android](https://github.com/crdroidandroid) & [LineageOS](https://github.com/LineageOS).
 - Apache 2.0 License.
