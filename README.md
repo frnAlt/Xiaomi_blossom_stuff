@@ -20,6 +20,8 @@ Target platforms: Generic System Images (GSI), MIUI / HyperOS ports, DnA Android
 | Rounded Corners Radius | `33dp` |
 | Treble Architecture | System-as-Root (SAR), VNDK 30/31/32, Dynamic Partitions (VAB/Retrofit) |
 
+For complete kernel offsets, mkbootimg parameters, and variant detection logic, see [KERNEL_AND_HARDWARE_LOGIC.md](KERNEL_AND_HARDWARE_LOGIC.md).
+
 ---
 
 ## Anti-Brick Protected Partition Architecture
@@ -40,7 +42,7 @@ For full unbrick instructions, see [EMERGENCY_UNBRICK_GUIDE.md](EMERGENCY_UNBRIC
 ## Cloud Workflows (GitHub Actions)
 
 ### 1. Automatic ROM Porter ([`.github/workflows/auto_port.yml`](.github/workflows/auto_port.yml))
-Automated cloud porting pipeline that downloads, unsparse/unpacks, merges Base+Port partitions, applies Blossom overlays and shims, builds dynamic `super.img`, runs AI diagnostics, and publishes flashable releases.
+Heavy-duty production porting pipeline that downloads, unpacks payload/super/brotli, merges Base+Port partitions, applies Blossom overlays and shims, builds dynamic `super.img`, runs AI diagnostics, and publishes flashable releases.
 
 ### 2. Heavy-Duty Firmware Dumper ([`.github/workflows/rom_dumper.yml`](.github/workflows/rom_dumper.yml))
 High-capacity firmware unpacker that downloads any stock Fastboot ROM, Recovery ZIP, OTA `payload.bin`, or `.tar.md5`, extracts all raw images (`system`, `vendor`, `product`, `boot`, `dtbo`), unpacks filesystem trees, aggregates all `build.prop` files, and generates a checksum manifest.
@@ -65,6 +67,7 @@ graph LR
 │   └── rom_dumper.yml                    # Heavy-Duty Firmware Dumper Pipeline
 │
 ├── tools/                                # Backend Automation & CLI Porting Suite
+│   ├── mkbootimg_blossom.py              # Blossom Custom Kernel Boot Image Packager
 │   ├── rom_dumper.py                     # Firmware Unpacker & Partition Dumper
 │   ├── unbrick_safety_guard.py           # Pre-Flash Safety Validator
 │   ├── ai_assistant.py                   # Porting Diagnostics & Error Root-Cause Analyzer
@@ -77,6 +80,7 @@ graph LR
 │   ├── create_magisk_module.py           # Magisk/KernelSU ZIP Packager
 │   └── verify_tree.py                    # Tree Diagnostic Validator
 │
+├── KERNEL_AND_HARDWARE_LOGIC.md          # Kernel Memory, mkbootimg Offsets & CPU Architecture
 ├── EMERGENCY_UNBRICK_GUIDE.md            # Emergency Unbrick & MTKClient Recovery Manual
 ├── DNA_KITCHEN_PORTING_GUIDE.md          # DnA Kitchen Step-by-Step Manual
 ├── PORTING_GUIDE.md                      # Standalone Comprehensive Porting Manual
@@ -96,31 +100,37 @@ graph LR
 
 ## Backend Automation CLI Tools
 
-### 1. Heavy-Duty Firmware Dumper (`tools/rom_dumper.py`)
+### 1. Custom Kernel Boot Image Builder (`tools/mkbootimg_blossom.py`)
+Builds `boot.img` with exact MediaTek header version 2, memory base (`0x40078000`), offsets, and cmdline:
+```bash
+python3 tools/mkbootimg_blossom.py --kernel Image.gz --dtb dtb.img --output boot.img
+```
+
+### 2. Heavy-Duty Firmware Dumper (`tools/rom_dumper.py`)
 Extracts full raw partition images, OTA payloads, and filesystem trees:
 ```bash
 python3 tools/rom_dumper.py --url "https://example.com/firmware.tgz" --package-name "Blossom_MIUI12"
 ```
 
-### 2. Pre-Flash Anti-Brick Safety Guard (`tools/unbrick_safety_guard.py`)
+### 3. Pre-Flash Anti-Brick Safety Guard (`tools/unbrick_safety_guard.py`)
 Scans any ROM package or script to ensure no protected bootloader or NVRAM partitions are targeted:
 ```bash
 python3 tools/unbrick_safety_guard.py --rom-zip Blossom_Port_HyperOS_dandelion.zip
 ```
 
-### 3. AI Porting Assistant & Diagnostic Engine (`tools/ai_assistant.py`)
+### 4. AI Porting Assistant & Diagnostic Engine (`tools/ai_assistant.py`)
 Analyzes build logs, extraction errors, or bootloop logcats and outputs root causes and fixes:
 ```bash
 python3 tools/ai_assistant.py --log-file /path/to/bootlog_or_build.log
 ```
 
-### 4. Automated Hardware & Framework Patcher (`tools/auto_patcher.py`)
+### 5. Automated Hardware & Framework Patcher (`tools/auto_patcher.py`)
 Disables forced encryption in fstabs, strips dm-verity panics, and configures MediaTek shims:
 ```bash
 python3 tools/auto_patcher.py --port-dir /path/to/extracted_port_rom
 ```
 
-### 5. End-to-End Automated ROM Porter (`tools/auto_porter.py`)
+### 6. End-to-End Automated ROM Porter (`tools/auto_porter.py`)
 Downloads, unpacks `payload.bin`/`super.img`, merges Base + Port partitions, injects fixes, and packages a flashable ZIP:
 ```bash
 python3 tools/auto_porter.py \
@@ -129,13 +139,13 @@ python3 tools/auto_porter.py \
   --rom-type HyperOS
 ```
 
-### 6. Dynamic Super Partition & Flasher Generator (`tools/super_tools.py`)
+### 7. Dynamic Super Partition & Flasher Generator (`tools/super_tools.py`)
 Patches `vbmeta.img` flags and builds cross-platform fastboot flashing scripts (`flash_all.bat` & `flash_all.sh`):
 ```bash
 python3 tools/super_tools.py --patch-vbmeta vbmeta.img --gen-scripts ./output_folder
 ```
 
-### 7. Multi-Mirror Uploader (`tools/multi_uploader.py`)
+### 8. Multi-Mirror Uploader (`tools/multi_uploader.py`)
 Uploads built ROMs to high-speed cloud mirrors (Pixeldrain, Transfer.sh, Custom URL):
 ```bash
 python3 tools/multi_uploader.py --file Blossom_Port_HyperOS_dandelion.zip
