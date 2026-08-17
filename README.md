@@ -1,13 +1,12 @@
 # Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs & Complete Porting Kit
 
-A complete, production-ready repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, backend automation tools, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
+A complete, production-ready repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, backend automation tools, **GitHub Actions Cloud Auto-Porter Workflow**, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
 
 Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**, **DnA Android Kitchen Porters**, **AOSP / Custom ROM Developers**, and **Treble Maintainers**.
 
-> 📖 **Quick Links to Guides & Tools:**  
-> - **[DnA Android Kitchen Porting Guide (DNA_KITCHEN_PORTING_GUIDE.md)](DNA_KITCHEN_PORTING_GUIDE.md)**: Full guide on unpacking, merging Base + Port ROMs, and repacking flashable zip / super.img!  
-> - **[General Porting Guide (PORTING_GUIDE.md)](PORTING_GUIDE.md)**: File-to-destination mapping tables, AOSP tree setup, and bug fixes!  
-> - **[Backend Automation Suite (`tools/`)](#-backend-automation-cli-tools)**: Python CLI tools to automate overlay compiling, ROM porting injection, Magisk packaging, and tree validation!
+> 🚀 **Automate Everything on GitHub Actions:**  
+> Want to port any ROM in the cloud without downloading gigabytes of files locally?  
+> Use our **[GitHub Actions Auto-Port Workflow](#-cloud-auto-port-github-actions-workflow)**! Paste any Port ROM URL -> Click Run -> Download your ready-to-flash Blossom ROM from GitHub Releases!
 
 ---
 
@@ -27,10 +26,43 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 
 ---
 
+## 🚀 Cloud Auto-Port (GitHub Actions Workflow)
+
+You can automatically port any ROM directly in GitHub Cloud using our automated workflow ([`.github/workflows/auto_port.yml`](.github/workflows/auto_port.yml)):
+
+```mermaid
+graph LR
+    A[Enter Port ROM URL] --> B[GitHub Actions Cloud Runner]
+    B --> C[Fast Multi-threaded Download aria2c]
+    C --> D[Extract payload.bin / super.img]
+    D --> E[Auto-Inject Overlays, Shims & Props]
+    E --> F[Package & Checksum Flashable ZIP]
+    F --> G[Upload to GitHub Releases & Custom URL]
+```
+
+### How to Run the Cloud Auto-Porter:
+1. Go to your GitHub Repository: **`https://github.com/frnAlt/Xiaomi_blossom_stuff`**
+2. Click on the **Actions** tab at the top.
+3. In the left sidebar, click **"🚀 Automatic ROM Porter for Xiaomi Blossom"**.
+4. Click the **"Run workflow"** button on the right.
+5. Fill in the input fields:
+   - **Port ROM URL**: Direct download link of the target ROM (e.g. HyperOS from Redmi Note 11, PixelOS, OneUI, etc.).
+   - **Base ROM URL** *(Optional)*: Direct link to stock Blossom Fastboot ROM (leave empty to use repository stock templates).
+   - **Target Variant**: Select `blossom` (All models), `dandelion` (9A), `angelica` (9C), or `cattail` (9 Activ).
+   - **ROM Name / Type**: Enter name (e.g. `HyperOS`, `MIUI14`, `PixelOS`).
+   - **Custom Upload URL** *(Optional)*: Enter a custom server URL or `https://transfer.sh/` to upload the finished build.
+6. Click **"Run workflow"**. Once the workflow finishes (approx. 5–10 mins), your ported ROM will be attached directly under **GitHub Releases** and **Actions Artifacts** ready to download and flash!
+
+---
+
 ## 📁 Repository Structure
 
 ```text
+├── .github/workflows/
+│   └── auto_port.yml                     # 🚀 GitHub Actions End-to-End Cloud ROM Porter
+│
 ├── tools/                                # ⚙️ Backend Automation & CLI Porting Suite
+│   ├── auto_porter.py                    # Complete End-to-End CLI Porter (Download -> Extract -> Merge -> Package)
 │   ├── port_helper.py                    # Automated ROM Port Engine (Overlays, Shims, Props injection)
 │   ├── build_overlays.py                 # Automated RRO Overlay Compiler & Signer (aapt + apksigner)
 │   ├── create_magisk_module.py           # Flashable Magisk/KernelSU ZIP Packager
@@ -105,10 +137,19 @@ Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**,
 
 ## ⚙️ Backend Automation CLI Tools
 
-This repository includes a production-ready Python backend suite in [`tools/`](tools/) to automate ROM porting tasks:
+You can also run all porting tasks locally on Linux / Termux / WSL using our Python backend suite in [`tools/`](tools/):
 
-### 1. Automated ROM Porting Engine (`tools/port_helper.py`)
-Automatically injects overlays, shims, carrier configs, and patches `build.prop` for any extracted Port ROM:
+### 1. End-to-End Automated ROM Porter (`tools/auto_porter.py`)
+Downloads, unpacks `payload.bin`/`super.img`, merges Base + Port partitions, injects all Blossom fixes, and packages a flashable ZIP:
+```bash
+python3 tools/auto_porter.py \
+  --port-url "https://example.com/hyperos_port.zip" \
+  --variant dandelion \
+  --rom-type HyperOS
+```
+
+### 2. ROM Port Injection Engine (`tools/port_helper.py`)
+Injects overlays, shims, carrier configs, and patches `build.prop` for an already-extracted Port ROM (DnA Kitchen / CRB project):
 ```bash
 # Auto-patch a ported ROM directory for Redmi 9A (dandelion)
 python3 tools/port_helper.py --port-dir /path/to/extracted_port_rom --variant dandelion
@@ -117,16 +158,10 @@ python3 tools/port_helper.py --port-dir /path/to/extracted_port_rom --variant da
 python3 tools/port_helper.py --port-dir /path/to/extracted_port_rom --variant angelica
 ```
 
-### 2. Overlay Compiler & Signer (`tools/build_overlays.py`)
+### 3. Overlay Compiler & Signer (`tools/build_overlays.py`)
 Compiles, zip-aligns, and cryptographically signs all RRO overlays from source:
 ```bash
 python3 tools/build_overlays.py --rro-dir rro_overlays --output-dir apks
-```
-
-### 3. Flashable Magisk ZIP Packager (`tools/create_magisk_module.py`)
-Generates the ready-to-flash `Blossom_Notch_Fix_Magisk.zip` module:
-```bash
-python3 tools/create_magisk_module.py --output Blossom_Notch_Fix_Magisk.zip
 ```
 
 ### 4. Tree Integrity & Port Diagnostic Validator (`tools/verify_tree.py`)
@@ -134,23 +169,6 @@ Runs comprehensive health checks on overlays, shims, XMLs, and props:
 ```bash
 python3 tools/verify_tree.py
 ```
-
----
-
-## 🍳 Quick Summary: Using DnA Android Kitchen to Port ROMs to Blossom
-
-See **[DNA_KITCHEN_PORTING_GUIDE.md](DNA_KITCHEN_PORTING_GUIDE.md)** for full details.
-
-1. **Base vs Port Setup**:
-   - **Base ROM**: Stock Blossom Fastboot ROM (`dandelion` or `angelica` MIUI 12.5).
-   - **Port ROM**: Target ROM firmware (HyperOS, MIUI 14, PixelOS, OneUI, OxygenOS from MediaTek donor).
-2. **Partition Replacement Strategy**:
-   - Keep **100% BASE**: `boot.img` (Kernel), `dtbo.img`, and `vendor/` (HALs/Drivers).
-   - Take **PORT ROM**: `system/`, `product/`, `system_ext/`.
-3. **Inject Blossom Fixes into Port ROM**:
-   - Run `python3 tools/port_helper.py --port-dir <dna_kitchen_port_project_path>` to automate injection.
-4. **Repack & Flash**:
-   - Repack `super.img` or flashable zip in DnA Kitchen and flash via FastbootD / TWRP.
 
 ---
 
@@ -167,7 +185,7 @@ See **[DNA_KITCHEN_PORTING_GUIDE.md](DNA_KITCHEN_PORTING_GUIDE.md)** for full de
 | **`xmls/carrier/vendor_miui.xml`** | `/vendor/etc/carrier/vendor_miui.xml` | `rro_overlays/CarrierConfigOverlayBlossom/res/xml/` | `/vendor/etc/carrier/vendor_miui.xml` |
 | **`xmls/audio/*.xml`** | `/vendor/etc/audio/` & `/vendor/etc/audio_policy_configuration.xml` | `device/xiaomi/blossom/configs/audio/` | Stock vendor retains this |
 | **`xmls/media/*.xml`** | `/vendor/etc/media_codecs*.xml` & `/vendor/etc/media_profiles_V1_0.xml` | `device/xiaomi/blossom/configs/media/` | Stock vendor retains this |
-| **`xmls/power/power_profile.xml`** | `framework-res.apk` -> `res/xml/power_profile.xml` | `overlay/frameworks/base/core/res/res/xml/` | Overlaid via framework-res overlay |
+| **`xmls/power/power_profile.xml`** | `framework-res.apk` -> `res/xml/power_profile.xml` | `overlay/frameworks/base/core/res/res/xml/power_profile.xml` | Overlaid via framework-res overlay |
 | **`xmls/power/powerhint.json`** | `/vendor/etc/powerhint.json` | `device/xiaomi/blossom/configs/powerhint.json` | `/vendor/etc/powerhint.json` |
 | **`xmls/thermal/thermal_info_config.json`** | `/vendor/etc/thermal_info_config.json` | `device/xiaomi/blossom/configs/thermal/` | `/vendor/etc/thermal_info_config.json` |
 | **`port_libs_and_shims/vndk/libui-v32.so`** | `/system/lib64/vndk-v32/libui.so` | `device/xiaomi/blossom/vndk/libui-v32.so` | Handled by VNDK APEX |
@@ -199,102 +217,7 @@ If you are running or installing a **Generic System Image (GSI)** (such as Phh A
    ```
 
 ### B. Installing the Notch & Display Overlay Fix on GSI
-Without this overlay, GSI status bar icons will overlap under the waterdrop notch and brightness might jump abruptly.
-
-#### Option 1: Direct Push via ADB (Root / TWRP / OrangeFox)
-```bash
-adb root
-adb remount
-adb push apks/treble_gsi/treble-overlay-xiaomi-blossom.apk /system/product/overlay/
-adb shell chmod 644 /system/product/overlay/treble-overlay-xiaomi-blossom.apk
-adb reboot
-```
-
-#### Option 2: Flash via Magisk / KernelSU Module
-Simply flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Magisk.zip) included in this repository directly in the Magisk or KernelSU app and reboot.
-
-### C. Fixing Common GSI Bugs on MediaTek MT6762/MT6765
-- **Fix Bluetooth Audio**: Go to `Settings -> Phh Treble Settings -> Audio -> Enable "Disable Bluetooth A2DP offload"`.
-- **Fix Minimum Brightness**: In Phh Settings, enable `"Set backlight scale"` or use the brightness arrays from [`extracted_display_overlay_xml/brightness_arrays.xml`](extracted_display_overlay_xml/brightness_arrays.xml).
-- **Fix In-Call Audio / Low Mic**: Go to `Phh Treble Settings -> Audio -> Enable "Use alternate audio policy"`.
-
----
-
-## 📱 Complete MIUI & HyperOS Porting Guide
-
-When porting a MIUI (MIUI 12.5 / 13 / 14) or Xiaomi HyperOS ROM from another device (like Redmi 9, Redmi Note 9, Redmi 10) to Blossom:
-
-### Step 1: Notch & Display Alignment
-1. Push `apks/DisplayOverlayBlossom.apk` to `/system_ext/overlay/` or `/product/overlay/`.
-2. Add the following lines to `/system/build.prop` or `/system_ext/build.prop`:
-   ```properties
-   ro.miui.notch=1
-   ro.miui.has_real_notch=1
-   ro.vendor.display.type=1
-   ```
-3. Inject the exact Waterdrop SVG cutout from [`extracted_display_overlay_xml/display_cutout_notch.xml`](extracted_display_overlay_xml/display_cutout_notch.xml) into your base `framework-res.apk`:
-   ```xml
-   <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
-   <dimen name="status_bar_height_portrait">56.0px</dimen>
-   <dimen name="status_bar_height_default">56.0px</dimen>
-   <dimen name="status_bar_height_landscape">24.0dp</dimen>
-   <dimen name="rounded_corner_radius">33dp</dimen>
-   ```
-
-### Step 2: VoLTE & MIUI Carrier Provisioning
-- Copy `xmls/carrier/vendor_miui.xml` and `xmls/carrier/vendor_device.xml` to `/vendor/etc/carrier/`.
-- Install `apks/CarrierConfigOverlayBlossom.apk` to `/vendor/overlay/` to ensure Dual 4G VoLTE and Wi-Fi calling icons initialize correctly.
-
-### Step 3: MediaTek Shims & VNDK Compatibility
-If camera, video playback, or SurfaceFlinger crash on newer bases due to missing `GraphicBufferMapper` symbols:
-- Place `port_libs_and_shims/libshims/libshim_ui/` into your vendor library path.
-- Add `libshim_ui.so` to `/vendor/etc/public.libraries.vendor.txt`.
-
----
-
-## 🛠️ Complete AOSP / Custom ROM Source Porting Guide
-
-To port LineageOS, crDroid, PixelOS, DerpFest, CherishOS, or EvolutionX from source:
-
-### Step 1: Set Up Device Tree Layout
-Copy the required components into your Android build tree under `device/xiaomi/blossom/`:
-```text
-device/xiaomi/blossom/
-├── rro_overlays/             <- Source RRO overlays from rro_overlays/
-├── configs/                  <- XML configs (audio, media, thermal, power) from xmls/
-├── rootdir/                  <- Init scripts and fstabs from rootdir/
-├── sepolicy/                 <- SELinux rules from sepolicy/
-├── libshims/                 <- Shims from port_libs_and_shims/libshims/
-├── lights/                   <- Lights HAL C++ from port_libs_and_shims/lights/
-├── init/                     <- Variant init cpp from port_libs_and_shims/init/
-├── vndk/                     <- VNDK prebuilts from port_libs_and_shims/vndk/
-├── BoardConfig.mk            <- Build config from build_makefiles/BoardConfig.mk
-└── device.mk                 <- Device makefile from build_makefiles/device.mk
-```
-
-### Step 2: Include Overlays in `device.mk`
-```makefile
-# RRO Overlays for Blossom
-PRODUCT_PACKAGES += \
-    CarrierConfigOverlayBlossom \
-    DialerOverlayBlossom \
-    FrameworksResOverlayBlossom \
-    LauncherOverlayBlossom \
-    SettingsOverlayBlossom \
-    SystemUIOverlayBlossom \
-    TelephonyOverlayBlossom \
-    WifiResOverlayBlossom
-
-# Or traditional overlay path
-DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/device_tree_overlay
-```
-
-### Step 3: Dynamic Variant Handling (Redmi 9A vs 9C vs 9 Activ)
-The file `port_libs_and_shims/init/init_blossom.cpp` dynamically identifies hardware SKUs:
-- **`dandelion`** (Redmi 9A — Single rear camera, no fingerprint sensor)
-- **`angelica`** (Redmi 9C — Triple rear camera, rear fingerprint sensor)
-- **`angelican`** (Redmi 9C NFC — Triple rear camera, fingerprint, NXP NFC)
-- **`cattail`** (Redmi 9 Activ — Helio G35 platform)
+Simply flash the prebuilt [`Blossom_Notch_Fix_Magisk.zip`](Blossom_Notch_Fix_Magisk.zip) directly in the Magisk or KernelSU app and reboot!
 
 ---
 

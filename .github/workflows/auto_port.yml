@@ -1,0 +1,152 @@
+name: 🚀 Automatic ROM Porter for Xiaomi Blossom
+
+on:
+  workflow_dispatch:
+    inputs:
+      port_rom_url:
+        description: "🔗 Port ROM Direct Download URL (Target ROM to port to Blossom)"
+        required: true
+        type: string
+      base_rom_url:
+        description: "🔗 Base ROM Direct Download URL (Stock Blossom Fastboot / ZIP - Optional)"
+        required: false
+        type: string
+        default: ""
+      target_variant:
+        description: "📱 Target Device Variant"
+        required: true
+        type: choice
+        options:
+          - blossom
+          - dandelion
+          - angelica
+          - angelican
+          - cattail
+        default: blossom
+      rom_type:
+        description: "🏷️ ROM Name / Type (e.g. HyperOS, MIUI14, PixelOS, LineageOS, OneUI)"
+        required: true
+        type: string
+        default: "HyperOS"
+      upload_release:
+        description: "📦 Upload to GitHub Releases?"
+        required: true
+        type: boolean
+        default: true
+      custom_upload_url:
+        description: "🌐 Custom Upload URL (Optional: e.g. https://transfer.sh/ or your server)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  build-and-port:
+    name: 🛠️ Port ROM for Blossom (${{ inputs.target_variant }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Check out Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install Build Dependencies & Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 p7zip-full zstd brotli liblz4-tool \
+            e2fsprogs simg2img aapt zipalign apksigner android-framework-res curl wget
+
+          # Install payload-dumper-go
+          PAYLOAD_URL="https://github.com/ssut/payload-dumper-go/releases/download/1.2.2/payload-dumper-go_1.2.2_linux_amd64.tar.gz"
+          wget -qO- "$PAYLOAD_URL" | sudo tar -xz -C /usr/local/bin payload-dumper-go
+          sudo chmod +x /usr/local/bin/payload-dumper-go
+          echo "payload-dumper-go version: $(payload-dumper-go -v || echo 'installed')"
+
+      - name: 🔨 Build Overlays & Magisk Module
+        run: |
+          python3 tools/build_overlays.py
+          python3 tools/create_magisk_module.py
+          python3 tools/verify_tree.py
+
+      - name: 🚀 Run Automated Blossom Port Pipeline
+        id: run_port
+        run: |
+          mkdir -p /tmp/blossom_auto_port
+
+          BASE_ARG=""
+          if [ -n "${{ inputs.base_rom_url }}" ]; then
+            BASE_ARG="--base-url '${{ inputs.base_rom_url }}'"
+          fi
+
+          UPLOAD_ARG=""
+          if [ -n "${{ inputs.custom_upload_url }}" ]; then
+            UPLOAD_ARG="--upload-url '${{ inputs.custom_upload_url }}'"
+          fi
+
+          python3 tools/auto_porter.py \
+            --port-url "${{ inputs.port_rom_url }}" \
+            $BASE_ARG \
+            $UPLOAD_ARG \
+            --variant "${{ inputs.target_variant }}" \
+            --rom-type "${{ inputs.rom_type }}" \
+            --work-dir "/tmp/blossom_auto_port"
+
+          # Export output variables
+          ROM_ZIP=$(ls /tmp/blossom_auto_port/output/*.zip | head -n 1)
+          META_JSON=$(ls /tmp/blossom_auto_port/output/*.json | head -n 1)
+          echo "ROM_PATH=$ROM_ZIP" >> $GITHUB_ENV
+          echo "META_PATH=$META_JSON" >> $GITHUB_ENV
+          echo "ROM_NAME=$(basename $ROM_ZIP)" >> $GITHUB_ENV
+
+      - name: 📤 Upload to GitHub Actions Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ROM_NAME }}
+          path: /tmp/blossom_auto_port/output/
+          retention-days: 7
+
+      - name: 🌐 Upload to Custom Upload URL (Optional)
+        if: inputs.custom_upload_url != ''
+        run: |
+          echo "Uploading ${{ env.ROM_PATH }} to ${{ inputs.custom_upload_url }}..."
+          curl -T "${{ env.ROM_PATH }}" "${{ inputs.custom_upload_url }}" || echo "Custom upload completed or encountered an issue."
+
+      - name: 🚀 Create GitHub Release & Upload ROM
+        if: inputs.upload_release == true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "port-${{ inputs.rom_type }}-${{ inputs.target_variant }}-${{ github.run_number }}"
+          name: "🔥 ${{ inputs.rom_type }} Port for Xiaomi Blossom (${{ inputs.target_variant }})"
+          body: |
+            ## 📱 Xiaomi Blossom Ported ROM Release
+
+            - **ROM Name / Type:** `${{ inputs.rom_type }}`
+            - **Target Variant:** `${{ inputs.target_variant }}` (Redmi 9A / 9C / 9 Activ / Poco C3)
+            - **Port Source URL:** `${{ inputs.port_rom_url }}`
+            - **Build Number:** `#${{ github.run_number }}`
+            - **Commit:** `${{ github.sha }}`
+
+            ### 🛠️ Included Fixes
+            - ✅ Waterdrop Notch Cutout (`M 0,0 H -64 V 60 H 64 V 0 H 0 Z`)
+            - ✅ Status Bar Height (`56.0px`) & Rounded Corners (`33dp`)
+            - ✅ Auto-Brightness Lux/Nits Spline Calibration
+            - ✅ MediaTek `GraphicBufferMapper` & `libui-v32.so` Shims
+            - ✅ Dual 4G VoLTE / CarrierConfig Provisioning
+            - ✅ Pre-bundled `Blossom_Notch_Fix_Magisk.zip`
+
+            ### 📲 Flashing Instructions
+            1. Reboot phone into **TWRP / OrangeFox** or **FastbootD**.
+            2. Wipe **Dalvik, Cache, System, Vendor, Data**.
+            3. Flash the attached ROM ZIP.
+            4. Format Data (type `yes`) and Reboot!
+          files: |
+            /tmp/blossom_auto_port/output/*.zip
+            /tmp/blossom_auto_port/output/*.json
+            Blossom_Notch_Fix_Magisk.zip
+          draft: false
+          prerelease: false
