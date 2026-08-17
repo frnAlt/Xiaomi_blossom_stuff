@@ -1,12 +1,12 @@
 # Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs & Complete Porting Kit
 
-A complete, production-ready repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, backend automation tools, **GitHub Actions Cloud Auto-Porter Workflow**, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
+A complete, production-ready repository containing extracted & compiled display overlays, decompiled XML trees, vendor libraries, MediaTek shims, SELinux policies, init/fstab scripts, backend automation tools, **AI Porting Diagnostics Assistant**, **GitHub Actions Cloud Auto-Porter Workflow**, and comprehensive guides for **Xiaomi Blossom** (`dandelion`, `angelica`, `angelican`, `cattail` — MediaTek MT6762G, MT6765, MT6765G).
 
 Designed for **GSI (Generic System Image) Porters**, **MIUI / HyperOS Porters**, **DnA Android Kitchen Porters**, **AOSP / Custom ROM Developers**, and **Treble Maintainers**.
 
 > 🚀 **Automate Everything on GitHub Actions:**  
 > Want to port any ROM in the cloud without downloading gigabytes of files locally?  
-> Use our **[GitHub Actions Auto-Port Workflow](#-cloud-auto-port-github-actions-workflow)**! Paste any Port ROM URL -> Click Run -> Download your ready-to-flash Blossom ROM from GitHub Releases!
+> Use our **[GitHub Actions Auto-Port Workflow](#-cloud-auto-port-github-actions-workflow)**! Paste any Port ROM URL -> Click Run -> Real-time AI logs diagnostic -> Download your ready-to-flash Blossom ROM from GitHub Releases & Mirrors!
 
 ---
 
@@ -32,12 +32,13 @@ You can automatically port any ROM directly in GitHub Cloud using our automated 
 
 ```mermaid
 graph LR
-    A[Enter Port ROM URL] --> B[GitHub Actions Cloud Runner]
+    A[Enter Port ROM URL in GitHub] --> B[GitHub Actions Cloud Runner]
     B --> C[Fast Multi-threaded Download aria2c]
     C --> D[Extract payload.bin / super.img]
-    D --> E[Auto-Inject Overlays, Shims & Props]
-    E --> F[Package & Checksum Flashable ZIP]
-    F --> G[Upload to GitHub Releases & Custom URL]
+    D --> E[Auto-Patcher: Overlays, Shims, AVB Bypass]
+    E --> F[AI Assistant: Real-time Diagnostics]
+    F --> G[Package Flashable ZIP + SHA256]
+    G --> H[Upload to GitHub Releases & Multi-Mirrors]
 ```
 
 ### How to Run the Cloud Auto-Porter:
@@ -51,7 +52,12 @@ graph LR
    - **Target Variant**: Select `blossom` (All models), `dandelion` (9A), `angelica` (9C), or `cattail` (9 Activ).
    - **ROM Name / Type**: Enter name (e.g. `HyperOS`, `MIUI14`, `PixelOS`).
    - **Custom Upload URL** *(Optional)*: Enter a custom server URL or `https://transfer.sh/` to upload the finished build.
-6. Click **"Run workflow"**. Once the workflow finishes (approx. 5–10 mins), your ported ROM will be attached directly under **GitHub Releases** and **Actions Artifacts** ready to download and flash!
+6. Click **"Run workflow"**.
+7. The workflow automatically produces:
+   - **GitHub Release** with flashable ZIPs, SHA256 checksums, and flashing scripts (`flash_all.bat` / `flash_all.sh`).
+   - **AI Diagnostic Report** in the workflow summary.
+   - **Multi-mirror links** (Pixeldrain, Transfer.sh, Custom endpoint).
+   - **Complete build logs and diagnostics artifacts**.
 
 ---
 
@@ -59,88 +65,53 @@ graph LR
 
 ```text
 ├── .github/workflows/
-│   └── auto_port.yml                     # 🚀 GitHub Actions End-to-End Cloud ROM Porter
+│   └── auto_port.yml                     # 🚀 GitHub Actions Cloud Auto-Porter Workflow (with AI Diagnostics)
 │
 ├── tools/                                # ⚙️ Backend Automation & CLI Porting Suite
-│   ├── auto_porter.py                    # Complete End-to-End CLI Porter (Download -> Extract -> Merge -> Package)
-│   ├── port_helper.py                    # Automated ROM Port Engine (Overlays, Shims, Props injection)
-│   ├── build_overlays.py                 # Automated RRO Overlay Compiler & Signer (aapt + apksigner)
-│   ├── create_magisk_module.py           # Flashable Magisk/KernelSU ZIP Packager
-│   └── verify_tree.py                    # Tree Integrity & Port Diagnostic Validator
+│   ├── ai_assistant.py                   # 🤖 AI Diagnostics & Error Root-Cause Analyzer (Offline + Gemini API)
+│   ├── auto_patcher.py                   # 🛠️ Automated Patcher (Fstab Encryption Bypass, AVB Verity, Audio)
+│   ├── auto_porter.py                    # ⚡ End-to-End CLI Porter (Download -> Extract -> Merge -> Package)
+│   ├── port_helper.py                    # 🔧 ROM Injection Engine (Overlays, Shims, Props, Carrier)
+│   ├── super_tools.py                    # 🧩 Dynamic Super Partition Engine (lpmake, AVB flags, Flasher scripts)
+│   ├── multi_uploader.py                 # 🌐 Multi-Mirror Cloud Uploader (Pixeldrain, Transfer.sh, Custom)
+│   ├── build_overlays.py                 # 🔨 RRO Compiler & Signer (aapt + apksigner)
+│   ├── create_magisk_module.py           # 📦 Flashable Magisk/KernelSU ZIP Packager
+│   └── verify_tree.py                    # 🔍 Tree Integrity & Port Diagnostic Validator
 │
 ├── DNA_KITCHEN_PORTING_GUIDE.md          # 🍳 Complete Guide for Porting with DnA Kitchen (Base -> Port)
 ├── PORTING_GUIDE.md                      # 📖 Standalone Comprehensive Porting Manual
 ├── Blossom_Notch_Fix_Magisk.zip          # ⚡ Ready-to-flash Magisk / KernelSU Notch Fix Module
 │
 ├── apks/                                 # 📦 Compiled, Zipaligned, and Signed Overlay APKs
-│   ├── FrameworksResOverlayBlossom.apk   # Full framework overlay (Notch, Brightness, Doze, Power)
-│   ├── DisplayOverlayBlossom.apk         # Dedicated Display Cutout & Statusbar overlay
-│   ├── display_overlay.apk               # Drop-in display overlay binary for ROMs/GSIs
-│   ├── SystemUIOverlayBlossom.apk        # SystemUI statusbar paddings, headers & system icons
-│   ├── SettingsOverlayBlossom.apk        # Settings UI customizations
-│   ├── CarrierConfigOverlayBlossom.apk   # VoLTE / IMS / Carrier provisioning
-│   ├── WifiResOverlayBlossom.apk         # Wi-Fi 2.4/5GHz resources and channels
-│   ├── DialerOverlayBlossom.apk          # Dialer & in-call UI overlays
-│   ├── TelephonyOverlayBlossom.apk       # Telephony stack overlays
-│   ├── LauncherOverlayBlossom.apk        # Launcher3 grid & icon configs
-│   ├── treble_gsi/                       # ⚡ Treble GSI Specific Overlays
-│   │   └── treble-overlay-xiaomi-blossom.apk
-│   └── vendor_overlay_prebuilts/         # 📁 Standard /vendor/overlay/ prebuilts
-│       ├── framework-res__auto_generated_rro_vendor.apk
-│       ├── SystemUI__auto_generated_rro_vendor.apk
-│       ├── Settings__auto_generated_rro_vendor.apk
-│       ├── CarrierConfig__auto_generated_rro_vendor.apk
-│       ├── WifiRes__auto_generated_rro_vendor.apk
-│       └── Telephony__auto_generated_rro_vendor.apk
-│
 ├── extracted_display_overlay_xml/        # 🎯 Decompiled & Extracted XMLs from display_overlay.apk
-│   ├── AndroidManifest.xml               # Target package ("android") & overlay priority
-│   ├── display_cutout_notch.xml          # Clean standalone Notch Path + Statusbar + Corners
-│   ├── display_dimens.xml                # Extracted dimension resources (status_bar_height, corners)
-│   ├── display_strings.xml               # Extracted string resources (config_mainBuiltInDisplayCutout)
-│   ├── display_bools.xml                 # Extracted boolean flags (config_fillMainBuiltInDisplayCutout)
-│   ├── brightness_arrays.xml             # Auto-brightness lux & nits calibration curves
-│   ├── power_profile.xml                 # Extracted battery drain & power profile specs
-│   ├── display_overlay_decompiled/       # Full apktool decompiled tree of display_overlay.apk
-│   ├── frameworks_overlay_decompiled/    # Full apktool decompiled tree of FrameworksResOverlayBlossom.apk
-│   └── treble_gsi_overlay_decompiled/    # Full apktool decompiled tree of treble-overlay-xiaomi-blossom.apk
-│
-├── xmls/                                 # 🛠️ Extracted & Categorized XML / JSON Configs
-│   ├── display/                          # Cutout SVG paths, Brightness curves, AOD/Doze
-│   ├── systemui/                         # Status bar paddings, carrier margins
-│   ├── settings/                         # Settings layout & features
-│   ├── power/                            # power_profile.xml, powerhint.json, task_profiles.json
-│   ├── audio/                            # audio_policy_configuration.xml, aurisys, effects
-│   ├── media/                            # media_codecs.xml, c2, profiles, performance
-│   ├── thermal/                          # thermal_info_config.json
-│   ├── carrier/                          # vendor.xml, vendor_device.xml, vendor_miui.xml
-│   ├── permissions/                      # Mediatek framework & IMS privapp permissions
-│   └── vintf_manifests/                  # manifest.xml, compatibility matrices, lights
-│
-├── rro_overlays/                         # 🌳 Source RRO Overlays (with Android.bp & AndroidManifest.xml)
-├── device_tree_overlay/                  # 📂 Traditional AOSP overlay structure (overlay/frameworks/base/...)
+├── xmls/                                 # 🛠️ Audio, Media, Thermal, Carrier & VINTF XMLs
 ├── port_libs_and_shims/                  # ⚙️ Essential Porting Libraries & Shims
-│   ├── vndk/                             # libui-v32.so, android.hardware.*-ndk_platform.so
-│   ├── libshims/                         # libshim_ui, libshim_vtservice, libshim_beanpod, libshim_audio
-│   ├── lights/                           # Lights HAL C++ source & service XML
-│   ├── audio/                            # Audio service init rc & makefiles
-│   ├── init/                             # init_blossom.cpp (Variant detection: dandelion vs angelica)
-│   └── public.libraries.vendor.txt
 ├── rootdir/                              # 📜 Init scripts (init.mt6765.rc, init.mt6762.rc) & fstabs
 ├── sepolicy/                             # 🔒 SELinux policies (vendor & private)
 ├── props/                                # ⚙️ Props (system.prop, vendor.prop, product.prop, odm.prop)
-├── build_makefiles/                      # 🏗️ BoardConfig.mk, device.mk, patches, extract-files.sh
-└── magisk_overlay_module/                # ⚡ Flashable Magisk / KernelSU module for Treble GSIs
+└── build_makefiles/                      # 🏗️ BoardConfig.mk, device.mk, patches, extract-files.sh
 ```
 
 ---
 
 ## ⚙️ Backend Automation CLI Tools
 
-You can also run all porting tasks locally on Linux / Termux / WSL using our Python backend suite in [`tools/`](tools/):
+Run all porting, patching, AI diagnostic, and packaging tasks locally on Linux / Termux / WSL:
 
-### 1. End-to-End Automated ROM Porter (`tools/auto_porter.py`)
-Downloads, unpacks `payload.bin`/`super.img`, merges Base + Port partitions, injects all Blossom fixes, and packages a flashable ZIP:
+### 1. AI Porting Assistant & Diagnostic Engine (`tools/ai_assistant.py`)
+Analyzes build logs, extraction errors, or bootloop logcats and outputs exact root causes and fixes:
+```bash
+python3 tools/ai_assistant.py --log-file /path/to/bootlog_or_build.log
+```
+
+### 2. Automated Hardware & Framework Patcher (`tools/auto_patcher.py`)
+Bypasses forced encryption in fstabs, disables dm-verity panics, and configures MediaTek shims:
+```bash
+python3 tools/auto_patcher.py --port-dir /path/to/extracted_port_rom
+```
+
+### 3. End-to-End Automated ROM Porter (`tools/auto_porter.py`)
+Downloads, unpacks `payload.bin`/`super.img`, merges Base + Port partitions, injects fixes, and packages a flashable ZIP:
 ```bash
 python3 tools/auto_porter.py \
   --port-url "https://example.com/hyperos_port.zip" \
@@ -148,26 +119,16 @@ python3 tools/auto_porter.py \
   --rom-type HyperOS
 ```
 
-### 2. ROM Port Injection Engine (`tools/port_helper.py`)
-Injects overlays, shims, carrier configs, and patches `build.prop` for an already-extracted Port ROM (DnA Kitchen / CRB project):
+### 4. Dynamic Super Partition & Flasher Generator (`tools/super_tools.py`)
+Patches `vbmeta.img` flags and builds cross-platform fastboot flashing scripts (`flash_all.bat` & `flash_all.sh`):
 ```bash
-# Auto-patch a ported ROM directory for Redmi 9A (dandelion)
-python3 tools/port_helper.py --port-dir /path/to/extracted_port_rom --variant dandelion
-
-# Auto-patch for Redmi 9C (angelica)
-python3 tools/port_helper.py --port-dir /path/to/extracted_port_rom --variant angelica
+python3 tools/super_tools.py --patch-vbmeta vbmeta.img --gen-scripts ./output_folder
 ```
 
-### 3. Overlay Compiler & Signer (`tools/build_overlays.py`)
-Compiles, zip-aligns, and cryptographically signs all RRO overlays from source:
+### 5. Multi-Mirror Uploader (`tools/multi_uploader.py`)
+Uploads built ROMs to high-speed cloud mirrors (Pixeldrain, Transfer.sh, Custom URL):
 ```bash
-python3 tools/build_overlays.py --rro-dir rro_overlays --output-dir apks
-```
-
-### 4. Tree Integrity & Port Diagnostic Validator (`tools/verify_tree.py`)
-Runs comprehensive health checks on overlays, shims, XMLs, and props:
-```bash
-python3 tools/verify_tree.py
+python3 tools/multi_uploader.py --file Blossom_Port_HyperOS_dandelion.zip
 ```
 
 ---

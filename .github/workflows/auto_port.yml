@@ -50,6 +50,13 @@ jobs:
       - name: 📥 Check out Repository
         uses: actions/checkout@v4
 
+      - name: 🧹 Maximize Runner Disk Space (Free up 35GB+)
+        run: |
+          echo "Freeing disk space on runner..."
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
+          sudo docker image prune --all --force 2>/dev/null || true
+          df -h
+
       - name: ⚙️ Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -75,7 +82,7 @@ jobs:
 
           echo "Tools setup complete."
 
-      - name: 🔨 Build Overlays & Magisk Module
+      - name: 🔨 Build Overlays, Magisk Module & Verify Tree
         run: |
           python3 tools/build_overlays.py
           python3 tools/create_magisk_module.py
@@ -83,8 +90,11 @@ jobs:
 
       - name: 🚀 Run Automated Blossom Port Pipeline
         id: run_port
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          mkdir -p /tmp/blossom_auto_port
+          mkdir -p /tmp/blossom_auto_port/logs
 
           BASE_ARG=""
           if [ -n "${{ inputs.base_rom_url }}" ]; then
@@ -102,7 +112,7 @@ jobs:
             $UPLOAD_ARG \
             --variant "${{ inputs.target_variant }}" \
             --rom-type "${{ inputs.rom_type }}" \
-            --work-dir "/tmp/blossom_auto_port"
+            --work-dir "/tmp/blossom_auto_port" 2>&1 | tee /tmp/blossom_auto_port/logs/porting_execution.log
 
           # Export output variables
           ROM_ZIP=$(ls /tmp/blossom_auto_port/output/*.zip | head -n 1)
@@ -111,21 +121,58 @@ jobs:
           echo "META_PATH=$META_JSON" >> $GITHUB_ENV
           echo "ROM_NAME=$(basename $ROM_ZIP)" >> $GITHUB_ENV
 
-      - name: 📤 Upload to GitHub Actions Artifacts
+      - name: 🌐 Upload to Multi-Mirrors (Pixeldrain, Transfer.sh, Custom)
+        if: success()
+        run: |
+          CUSTOM_ARG=""
+          if [ -n "${{ inputs.custom_upload_url }}" ]; then
+            CUSTOM_ARG="--custom-url '${{ inputs.custom_upload_url }}'"
+          fi
+
+          python3 tools/multi_uploader.py \
+            --file "${{ env.ROM_PATH }}" \
+            $CUSTOM_ARG \
+            --output-md /tmp/blossom_auto_port/logs/mirrors_summary.md || true
+
+      - name: 🤖 Run AI Porting Assistant & Diagnostic Analysis
+        if: always()
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          LOG_FILE="/tmp/blossom_auto_port/logs/porting_execution.log"
+          if [ -f "$LOG_FILE" ]; then
+            python3 tools/ai_assistant.py \
+              --log-file "$LOG_FILE" \
+              --output-md /tmp/blossom_auto_port/logs/ai_report.md
+            
+            # Append AI report to GitHub Step Summary
+            cat /tmp/blossom_auto_port/logs/ai_report.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f "/tmp/blossom_auto_port/logs/mirrors_summary.md" ]; then
+            echo -e "\n" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/blossom_auto_port/logs/mirrors_summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📤 Upload Build Logs & Diagnostics (Always Executed)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Blossom_Port_Diagnostics_Logs
+          path: /tmp/blossom_auto_port/logs/
+          retention-days: 14
+
+      - name: 📤 Upload Ported ROM Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ROM_NAME }}
           path: /tmp/blossom_auto_port/output/
           retention-days: 7
 
-      - name: 🌐 Upload to Custom Upload URL (Optional)
-        if: inputs.custom_upload_url != ''
-        run: |
-          echo "Uploading ${{ env.ROM_PATH }} to ${{ inputs.custom_upload_url }}..."
-          curl -T "${{ env.ROM_PATH }}" "${{ inputs.custom_upload_url }}" || echo "Custom upload completed or encountered an issue."
-
       - name: 🚀 Create GitHub Release & Upload ROM
-        if: inputs.upload_release == true
+        if: success() && inputs.upload_release == true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "port-${{ inputs.rom_type }}-${{ inputs.target_variant }}-${{ github.run_number }}"
@@ -163,6 +210,7 @@ jobs:
           files: |
             /tmp/blossom_auto_port/output/*.zip
             /tmp/blossom_auto_port/output/*.json
+            /tmp/blossom_auto_port/logs/ai_report.md
             Blossom_Notch_Fix_Magisk.zip
           draft: false
           prerelease: false
