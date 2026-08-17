@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="dimen" name="config_screenBrightnessSettingMinimumFloat">0.0</item>
+    <item type="dimen" name="config_screenBrightnessSettingMaximumFloat">1.0</item>
+    <item type="dimen" name="config_highResTaskSnapshotScale">0.7</item>
+    <item type="dimen" name="config_lowResTaskSnapshotScale">0.3</item>
+    <dimen name="status_bar_height_default">56.0px</dimen>
+    <dimen name="status_bar_height_portrait">56.0px</dimen>
+    <dimen name="status_bar_height_landscape">24.0dip</dimen>
+    <dimen name="rounded_corner_radius">33.0dip</dimen>
+</resources>

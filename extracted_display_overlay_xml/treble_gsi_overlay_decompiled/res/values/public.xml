@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <public type="string" name="config_mainBuiltInDisplayCutout" id="0x7f020000" />
+    <public type="bool" name="config_fillMainBuiltInDisplayCutout" id="0x7f030000" />
+    <public type="dimen" name="status_bar_height_default" id="0x7f040000" />
+    <public type="dimen" name="status_bar_height_portrait" id="0x7f040001" />
+    <public type="dimen" name="status_bar_height_landscape" id="0x7f040002" />
+    <public type="dimen" name="rounded_corner_radius" id="0x7f040003" />
+</resources>

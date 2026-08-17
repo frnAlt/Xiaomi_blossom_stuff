@@ -1,6 +1,6 @@
 # Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) Overlays, Configs & Porting Kit
 
-Complete extracted & compiled display overlays, XML configuration trees, vendor libraries, shims, sepolicies, and device tree assets for **Xiaomi Blossom** (Redmi 9A, Redmi 9C, Redmi 9 Activ, Poco C3 / MT6762G, MT6765, MT6765G).
+Complete extracted & compiled display overlays, decompiled XML trees, vendor libraries, shims, sepolicies, and device tree assets for **Xiaomi Blossom** (Redmi 9A, Redmi 9C, Redmi 9 Activ, Poco C3 / MT6762G, MT6765, MT6765G).
 
 Designed for **Custom ROM developers**, **GSI (Generic System Image) builders**, and **Treble maintainers**.
 
@@ -44,7 +44,19 @@ Designed for **Custom ROM developers**, **GSI (Generic System Image) builders**,
 │       ├── WifiRes__auto_generated_rro_vendor.apk
 │       └── Telephony__auto_generated_rro_vendor.apk
 │
-├── xmls/                                 # Extracted & Organized XML / JSON Configs
+├── extracted_display_overlay_xml/        # 🎯 Decompiled & Extracted XMLs directly from display_overlay.apk
+│   ├── AndroidManifest.xml               # Target package & overlay priority definition
+│   ├── display_cutout_notch.xml          # Clean standalone Notch Path + Statusbar Height + Rounded Corners
+│   ├── display_dimens.xml                # Extracted dimension resources (status_bar_height, rounded corners)
+│   ├── display_strings.xml               # Extracted string resources (config_mainBuiltInDisplayCutout)
+│   ├── display_bools.xml                 # Extracted boolean flags (config_fillMainBuiltInDisplayCutout)
+│   ├── brightness_arrays.xml             # Auto-brightness lux & nits calibration curves
+│   ├── power_profile.xml                 # Extracted battery drain & power profile specs
+│   ├── display_overlay_decompiled/       # Full apktool decompiled tree of display_overlay.apk
+│   ├── frameworks_overlay_decompiled/    # Full apktool decompiled tree of FrameworksResOverlayBlossom.apk
+│   └── treble_gsi_overlay_decompiled/    # Full apktool decompiled tree of treble-overlay-xiaomi-blossom.apk
+│
+├── xmls/                                 # Extracted & Categorized XML / JSON Configs
 │   ├── display/                          # Cutout SVG paths, Brightness curves, AOD/Doze
 │   ├── systemui/                         # Status bar paddings, carrier margins
 │   ├── settings/                         # Settings layout & features
@@ -74,24 +86,36 @@ Designed for **Custom ROM developers**, **GSI (Generic System Image) builders**,
 
 ---
 
-## 🛠️ Display & Cutout Technical Reference
+## 🎯 Extracted Display Overlay XML Details (`extracted_display_overlay_xml/`)
 
-### Notch SVG Path (`config_mainBuiltInDisplayCutout`)
+The folder [`extracted_display_overlay_xml/`](extracted_display_overlay_xml/) contains the human-readable XML resources directly extracted and decompiled from `display_overlay.apk`.
+
+### 1. [`display_cutout_notch.xml`](extracted_display_overlay_xml/display_cutout_notch.xml)
+Contains the exact SVG path and geometry required by the Android SurfaceFlinger / WindowManager for Xiaomi Blossom's teardrop/waterdrop notch:
 ```xml
-<string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
-<bool name="config_fillMainBuiltInDisplayCutout">true</bool>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Waterdrop Notch SVG Cutout Path -->
+    <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
+    <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
+
+    <!-- Status Bar Heights & Rounded Corners -->
+    <dimen name="status_bar_height_default">56.0px</dimen>
+    <dimen name="status_bar_height_portrait">56.0px</dimen>
+    <dimen name="status_bar_height_landscape">24.0dp</dimen>
+    <dimen name="rounded_corner_radius">33dp</dimen>
+</resources>
 ```
 
-### Dimensions
-```xml
-<dimen name="status_bar_height_default">56.0px</dimen>
-<dimen name="status_bar_height_portrait">56.0px</dimen>
-<dimen name="status_bar_height_landscape">24.0dp</dimen>
-<dimen name="rounded_corner_radius">33dp</dimen>
-<dimen name="status_bar_padding_start">8dp</dimen>
-<dimen name="status_bar_padding_top">10.0px</dimen>
-<dimen name="status_bar_padding_end">0dp</dimen>
-```
+### 2. [`display_dimens.xml`](extracted_display_overlay_xml/display_dimens.xml)
+Status bar and rounded corner dimensions:
+- `status_bar_height_default`: `56.0px`
+- `status_bar_height_portrait`: `56.0px`
+- `status_bar_height_landscape`: `24.0dp`
+- `rounded_corner_radius`: `33.0dp`
+
+### 3. [`brightness_arrays.xml`](extracted_display_overlay_xml/brightness_arrays.xml)
+Auto-brightness lux and nits mappings for smooth backlight transitions without sudden jumps on MTK panels.
 
 ---
 
@@ -112,25 +136,17 @@ Designed for **Custom ROM developers**, **GSI (Generic System Image) builders**,
 
 ## 📤 Pushing to Your GitHub Repository
 
-To push this entire structured package to your own GitHub repository:
-
 ```bash
 cd /home/ffjisan804/blossom_overlays_and_configs
 
-# Initialize git repository (if not already initialized)
-git init -b main
-
-# Stage all files
+# Stage all files including extracted XMLs
 git add .
 
-# Create initial commit
-git commit -m "blossom: Add extracted overlays, XML configs, porting libs, and shims"
-
-# Add your GitHub repository as remote origin
-git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>.git
+# Create commit
+git commit -m "blossom: Add extracted XMLs from display_overlay.apk and update documentation"
 
 # Push to GitHub
-git push -u origin main
+git push origin main
 ```
 
 ---

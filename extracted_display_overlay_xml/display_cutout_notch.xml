@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Extracted from display_overlay.apk for Xiaomi Blossom (Redmi 9A / 9C / 9 Activ) -->
+<resources>
+    <!-- Waterdrop Notch SVG Cutout Path -->
+    <string translatable="false" name="config_mainBuiltInDisplayCutout">M 0,0 H -64 V 60 H 64 V 0 H 0 Z</string>
+    <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
+
+    <!-- Status Bar Heights & Rounded Corners -->
+    <dimen name="status_bar_height_default">56.0px</dimen>
+    <dimen name="status_bar_height_portrait">56.0px</dimen>
+    <dimen name="status_bar_height_landscape">24.0dp</dimen>
+    <dimen name="rounded_corner_radius">33dp</dimen>
+</resources>

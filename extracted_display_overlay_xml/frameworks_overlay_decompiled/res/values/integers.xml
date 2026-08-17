@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="config_pinnerHomePinBytes">6291456</integer>
+    <integer name="config_autoBrightnessBrighteningLightDebounce">2000</integer>
+    <integer name="config_autoBrightnessDarkeningLightDebounce">4000</integer>
+    <integer name="config_brightness_ramp_rate_fast">400</integer>
+    <integer name="config_defaultAlarmVibrationIntensity">3</integer>
+    <integer name="config_defaultHapticFeedbackIntensity">3</integer>
+    <integer name="config_defaultMediaVibrationIntensity">3</integer>
+    <integer name="config_defaultNotificationVibrationIntensity">3</integer>
+    <integer name="config_defaultRingVibrationIntensity">3</integer>
+    <integer name="config_lightSensorWarmupTime">200</integer>
+    <integer name="config_num_physical_slots">2</integer>
+</resources>
