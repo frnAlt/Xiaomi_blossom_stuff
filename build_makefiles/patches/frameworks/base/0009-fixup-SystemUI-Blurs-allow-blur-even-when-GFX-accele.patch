@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: fukiame <fukiame@proton.me>
+Date: Tue, 19 Aug 2025 03:31:00 +0000
+Subject: [PATCH] fixup! SystemUI: Blurs: allow blur even when GFX acceleration
+ is enabled
+
+compose qs
+
+Signed-off-by: fukiame <fukiame@proton.me>
+---
+ .../window/data/repository/WindowRootViewBlurRepository.kt      | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/window/data/repository/WindowRootViewBlurRepository.kt b/packages/SystemUI/src/com/android/systemui/window/data/repository/WindowRootViewBlurRepository.kt
+index 9b934bc6c..7817f24c6 100644
+--- a/packages/SystemUI/src/com/android/systemui/window/data/repository/WindowRootViewBlurRepository.kt
++++ b/packages/SystemUI/src/com/android/systemui/window/data/repository/WindowRootViewBlurRepository.kt
+@@ -90,7 +90,7 @@ constructor(
+     override var blurAppliedListener: BlurAppliedListener? = null
+ 
+     private fun isBlurAllowed(): Boolean {
+-        return ActivityManager.isHighEndGfx() && !isDisableBlurSysPropSet()
++        return !ActivityManager.isLowRamDeviceStatic() && !isDisableBlurSysPropSet()
+     }
+ 
+     companion object {

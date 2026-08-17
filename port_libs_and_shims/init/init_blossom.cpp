@@ -1,0 +1,132 @@
+/*
+   Copyright (c) 2015, The Linux Foundation. All rights reserved.
+   Copyright (C) 2016 The CyanogenMod Project.
+   Copyright (C) 2019 The LineageOS Project.
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are
+   met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of The Linux Foundation nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+   THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+   WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+   ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+   BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <cstdlib>
+#include <string.h>
+
+#define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
+#include <sys/_system_properties.h>
+#include <sys/sysinfo.h>
+#include <android-base/properties.h>
+
+#include "property_service.h"
+#include "vendor_init.h"
+
+using android::base::GetProperty;
+using std::string;
+
+void property_override(string prop, string value)
+{
+    auto pi = (prop_info*) __system_property_find(prop.c_str());
+
+    if (pi != nullptr)
+        __system_property_update(pi, value.c_str(), value.size());
+    else
+        __system_property_add(prop.c_str(), prop.size(), value.c_str(), value.size());
+}
+
+void vendor_load_properties()
+{
+    // dalvik heap configuration
+    string heapstartsize, heapgrowthlimit, heapsize, heapminfree,
+			heapmaxfree, heaptargetutilization;
+
+    // lmkd configuration
+    string partialstall, completestall, thrashlim, thrashlimdec,
+			swapfreelow, upressure;
+
+    struct sysinfo sys;
+    sysinfo(&sys);
+
+    if (sys.totalram > 5072ull * 1024 * 1024) {
+        // from - phone-xhdpi-6144-dalvik-heap.mk
+        heapstartsize = "16m";
+        heapgrowthlimit = "256m";
+        heapsize = "512m";
+        heaptargetutilization = "0.5";
+        heapminfree = "8m";
+        heapmaxfree = "32m";
+        // from lmkd defaults for high perf devices
+        // except completestall, default 700
+        partialstall = "70";
+        completestall = "140";
+        thrashlim = "100";
+        thrashlimdec = "10";
+        swapfreelow = "20";
+        upressure = "50";
+    } else if (sys.totalram > 3072ull * 1024 * 1024) {
+        // from - phone-xxhdpi-4096-dalvik-heap.mk
+        heapstartsize = "8m";
+        heapgrowthlimit = "192m";
+        heapsize = "512m";
+        heaptargetutilization = "0.6";
+        heapminfree = "8m";
+        heapmaxfree = "16m";
+        // from lmkd defaults for high perf devices
+        // tuned lower, clamped stall
+        partialstall = "80";
+        completestall = "240";
+        thrashlim = "70";
+        thrashlimdec = "20";
+        swapfreelow = "18";
+        upressure = "60";
+        property_override("ro.config.art_lowmem", "true");
+    } else {
+        // from - phone-xhdpi-2048-dalvik-heap.mk
+        heapstartsize = "8m";
+        heapgrowthlimit = "192m";
+        heapsize = "384m";
+        heaptargetutilization = "0.75";
+        heapminfree = "512k";
+        heapmaxfree = "8m";
+        // from lmkd defaults for low ram devices
+        // tuned a bit "higher end"
+        partialstall = "135";
+        completestall = "540";
+        thrashlim = "55";
+        thrashlimdec = "40";
+        swapfreelow = "15";
+        upressure = "70";
+        property_override("ro.config.art_lowmem", "true");
+    }
+
+    property_override("dalvik.vm.heapstartsize", heapstartsize);
+    property_override("dalvik.vm.heapgrowthlimit", heapgrowthlimit);
+    property_override("dalvik.vm.heapsize", heapsize);
+    property_override("dalvik.vm.heaptargetutilization", heaptargetutilization);
+    property_override("dalvik.vm.heapminfree", heapminfree);
+    property_override("dalvik.vm.heapmaxfree", heapmaxfree);
+
+    property_override("ro.lmk.psi_partial_stall_ms", partialstall);
+    property_override("ro.lmk.psi_complete_stall_ms", completestall);
+    property_override("ro.lmk.thrashing_limit", thrashlim);
+    property_override("ro.lmk.thrashing_limit_decay", thrashlimdec);
+    property_override("ro.lmk.swap_free_low_percentage", swapfreelow);
+    property_override("ro.lmk.upgrade_pressure", upressure);
+}

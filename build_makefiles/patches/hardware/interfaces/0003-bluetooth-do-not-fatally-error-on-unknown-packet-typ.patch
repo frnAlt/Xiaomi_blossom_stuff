@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Billy Laws <blaws05@gmail.com>
+Date: Tue, 31 Dec 2019 11:29:27 -0600
+Subject: [PATCH 2/2] bluetooth: do not fatally error on unknown packet types
+
+The bcm4356 in nx sends unknown packets, but it is not fatal if
+they are not handled.
+
+Co-authored-by: Billy Laws <blaws05@gmail.com>
+Co-authored-by: Thomas Makin <halorocker89@gmail.com>
+
+Change-Id: I0db97491d8a57add810aabdb133b7c29c736dcad
+---
+ bluetooth/1.0/default/h4_protocol.cc  | 7 ++++++-
+ bluetooth/1.0/default/mct_protocol.cc | 4 ++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/bluetooth/1.0/default/h4_protocol.cc b/bluetooth/1.0/default/h4_protocol.cc
+index 33238dab53..24596879d0 100644
+--- a/bluetooth/1.0/default/h4_protocol.cc
++++ b/bluetooth/1.0/default/h4_protocol.cc
+@@ -92,6 +92,9 @@ void H4Protocol::OnPacketReady() {
+     case HCI_PACKET_TYPE_ISO_DATA:
+       iso_cb_(hci_packetizer_.GetPacket());
+       break;
++    case HCI_PACKET_TYPE_UNKNOWN:
++      ALOGE("%s: Unknown packet sent", __func__);
++      break;
+     default:
+       LOG_ALWAYS_FATAL("%s: Unimplemented packet type %d", __func__,
+                        static_cast<int>(hci_packet_type_));
+@@ -119,7 +122,9 @@ void H4Protocol::OnDataReady(int fd) {
+       }
+     }
+     hci_packet_type_ = static_cast<HciPacketType>(buffer[0]);
+-    if (hci_packet_type_ != HCI_PACKET_TYPE_ACL_DATA &&
++    if (hci_packet_type_ == HCI_PACKET_TYPE_UNKNOWN) {
++        ALOGE("%s: Unknown packet sent", __func__);
++    } else if (hci_packet_type_ != HCI_PACKET_TYPE_ACL_DATA &&
+         hci_packet_type_ != HCI_PACKET_TYPE_SCO_DATA &&
+         hci_packet_type_ != HCI_PACKET_TYPE_ISO_DATA &&
+         hci_packet_type_ != HCI_PACKET_TYPE_EVENT) {
+diff --git a/bluetooth/1.0/default/mct_protocol.cc b/bluetooth/1.0/default/mct_protocol.cc
+index 2a59187cfe..29a4294177 100644
+--- a/bluetooth/1.0/default/mct_protocol.cc
++++ b/bluetooth/1.0/default/mct_protocol.cc
+@@ -44,6 +44,10 @@ size_t MctProtocol::Send(uint8_t type, const uint8_t* data, size_t length) {
+     return WriteSafely(uart_fds_[CH_CMD], data, length);
+   if (type == HCI_PACKET_TYPE_ACL_DATA)
+     return WriteSafely(uart_fds_[CH_ACL_OUT], data, length);
++  if (type == HCI_PACKET_TYPE_UNKNOWN) {
++    ALOGE("%s: Unknown packet sent", __func__);
++    return 0;
++  }
+   LOG_ALWAYS_FATAL("%s: Unimplemented packet type = %d", __func__, type);
+   return 0;
+ }

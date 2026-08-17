@@ -1,0 +1,6 @@
+id=blossom-display-overlay
+name=Xiaomi Blossom Notch & Display Overlay
+version=v1.0
+versionCode=1
+author=ffjisan804
+description=Fixes display cutout notch, statusbar padding, brightness curve, and vendor overlays for Xiaomi Redmi 9A / 9C / 9 Activ (Blossom) on Custom ROMs and Treble GSIs.

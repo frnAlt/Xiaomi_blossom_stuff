@@ -1,0 +1,5 @@
+runtime_resource_overlay {
+    name: "LauncherOverlayBlossom",
+    sdk_version: "current",
+    vendor: true,
+}

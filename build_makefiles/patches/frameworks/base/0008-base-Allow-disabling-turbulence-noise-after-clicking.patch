@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ido Ben-Hur <idoybh2@gmail.com>
+Date: Thu, 3 Oct 2024 23:34:10 +0300
+Subject: [PATCH] base: Allow disabling turbulence noise after clicking the
+ play button
+
+Having the turbulence noise play causes frame drops on mid to lower-end devices.
+To work around this, allow disabling it through an overlay.
+
+[basamaryan: Only disable the turbulence noise and kill the toggle]
+[fukiame: flat out kill the thing since this is an in-tree patch]
+
+Change-Id: If03f9ce6e4cb11805ef1edd484702367859933fe
+Signed-off-by: basamaryan <basam.aryan@gmail.com>
+Signed-off-by: a <b@c.d>
+---
+ .../media/controls/ui/controller/MediaControlPanel.java         | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/media/controls/ui/controller/MediaControlPanel.java b/packages/SystemUI/src/com/android/systemui/media/controls/ui/controller/MediaControlPanel.java
+index 740af02a654c..0890376fe3d1 100644
+--- a/packages/SystemUI/src/com/android/systemui/media/controls/ui/controller/MediaControlPanel.java
++++ b/packages/SystemUI/src/com/android/systemui/media/controls/ui/controller/MediaControlPanel.java
+@@ -608,6 +608,7 @@ public class MediaControlPanel {
+                         mLoadingEffect::finish,
+                         TURBULENCE_NOISE_PLAY_DURATION
+                 );
++		/*
+             } else {
+                 mTurbulenceNoiseController.play(
+                         Type.SIMPLEX_NOISE,
+@@ -617,6 +618,7 @@ public class MediaControlPanel {
+                         mTurbulenceNoiseController::finish,
+                         TURBULENCE_NOISE_PLAY_DURATION
+                 );
++		*/
+             }
+         }
+ 
